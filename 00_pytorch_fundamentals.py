@@ -222,6 +222,98 @@ tensor_c = torch.arange(0., 100., 10.)
 # torch.unsqueeze(input, dim)	Returns input with a dimension value of 1 added at dim.
 # torch.permute(input, dims)	Returns a view of the original input with its dimensions permuted (rearranged) to dims.
 
+#Indexing selecting data from tensors
+#create tensor
+x2 = torch.arange(1, 10).reshape(1,3,3)
+# print(x2, x2.shape)
+#lets index bracket by bracket
+# print(f'first square bracket:\n{x2[0]} ')
+# print(f'second square bracket:\n{x2[0][0]} ')
+# print(f'third square bracket:\n{x2[0][0][0]} ')
+
+# Get all values of 0th dimension and the 0 index of 1st dimension
+# print(x2[:, 0])
+
+#Pytorch tensors and numpy
+# torch.from_numpy(ndarray) numpy array -> pytorch tensor
+#torch.Tensor.numpy() Pytorch tensor -> numpy array
+
+# Numpy array to tensor
+import numpy as np
+array = np.arange(1.0, 8.0)
+tensor3 = torch.from_numpy(array)
+# print(array, tensor3)
+
+#and if you need go from tensor to numpy array you can call tensor.numpy()
+# numpy_tensor = tensor3.numpy()
+# print(tensor3, numpy_tensor)
+
+# if you wanted to created two random tensors with the same values.
+# As in, the tensors would still contain random values but they would be of the same flavour.
+# That's where torch.manual_seed(seed) comes in, where seed is an integer (like 42 but it could be anything) that flavours the randomness.
+# Let's try it out by creating some more flavoured random tensors.
+
+import random
+#set random seed
+# RANDOM_SEED = 42 #
+# torch.manual_seed(seed=RANDOM_SEED)
+# random_tensor_C = torch.rand(3,4)
+
+#have to reset every time a new rand() is called
+# without this tensor_D would be different to tensor_C
+# torch.random.manual_seed(seed=RANDOM_SEED)
+# random_tensor_D = torch.rand(3,4)
+# print(f'Tensor C: \n {random_tensor_C}')
+# print(f'Tensor D: \n {random_tensor_D}')
+# print(f'Are they equal? \n{random_tensor_C==random_tensor_D}')
+
+#running tensors on GPU (making fater computations)
+# print(torch.cuda.is_available()) # check if gpu is available
+#set device type
+# device = 'cuda' if torch.cuda.is_available() else 'cpu'
+# print(device)
+
+#count number of devices GPU
+# print(torch.cuda.device_count())
+
+#Getting pytorch run on apple silicon
+#In order to run PyTorch on Apple's M1/M2/M3 GPUs you can use the torch.backends.mps module.
+#check status
+# print(torch.backends.mps.is_available())
+#set device status
+# device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+# print(device)
+
+# if torch.cuda.is_available():
+#     device = "cuda" # Use NVIDIA GPU (if available)
+# elif torch.backends.mps.is_available():
+#     device = "mps" # Use Apple Silicon GPU (if available)
+# else:
+#     device = "cpu" # Default to CPU if no GPU is available
+# print(device)
+
+#Putting tensors and models on gpu
+
+# You can put tensors (and models, we'll see this later) '
+# on a specific device by calling to(device) on them. Where device is the target device you'd like the tensor (or model) to go to.
+
+# Create tensor (default on CPU)
+# tensor4 = torch.tensor([1, 2, 3])
+#
+# # Tensor not on GPU
+# print(tensor4, tensor.device)
+#
+# # Move tensor to GPU (if available)
+# tensor_on_gpu = tensor.to(device)
+# print(tensor_on_gpu)
+
+#Moving back tensor on CPU
+# For example, you'll want to do this if you want to interact with your tensors with NumPy (NumPy does not leverage the GPU).
+
+#to go back use your_tensor.cpu()
+
+
+
 
 
 
