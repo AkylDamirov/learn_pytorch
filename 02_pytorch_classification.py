@@ -485,14 +485,201 @@ with torch.inference_mode():
     y_preds = torch.round(torch.sigmoid(model_3(X_test))).squeeze()
 
 # Plot decision boundaries for training and test sets
-plt.figure(figsize=(12,6))
-plt.subplot(1,2,1)
-plt.title('Train')
-plot_decision_boundary(model_1, X_train, y_train)# model_1 = no non-linearity
-plt.subplot(1,2,2)
-plt.title('Test')
-plot_decision_boundary(model_3, X_test, y_test) # model_3 = has non-linearity
-plt.show()
+# plt.figure(figsize=(12,6))
+# plt.subplot(1,2,1)
+# plt.title('Train')
+# plot_decision_boundary(model_1, X_train, y_train)# model_1 = no non-linearity
+# plt.subplot(1,2,2)
+# plt.title('Test')
+# plot_decision_boundary(model_3, X_test, y_test) # model_3 = has non-linearity
+# plt.show()
+
+
+# 7. Replicating non-linear activation functions
+# Let's start by creating a small amount of data.
+#create a toy tensor (similar to the data going into out model(s))
+A = torch.arange(-10, 10, 1, dtype=torch.float32)
+# plt.plot(A)
+# plt.show()
+
+# Now let's see how the ReLU activation function influences it.
+# And instead of using PyTorch's ReLU (torch.nn.ReLU), we'll recreate it ourselves.
+# The ReLU function turns all negatives to 0 and leaves the positive values as they are.
+
+#create ReLU func by hand
+def relu(x):
+    return torch.maximum(torch.tensor(0),x)
+
+# plt.plot(relu(A))
+# plt.show()
+#lets build a func to replicate the sigmoid function with Pytorch
+
+#create a custom sigmoid func
+def sigmoid(x):
+    return 1 / (1+torch.exp(-x))
+
+# print(sigmoid(A))
+# plt.plot(sigmoid(A))
+# plt.show()
+
+# 8. Putting things together by building a multi-class PyTorch model
+# To begin a multi-class classification problem, let's create some multi-class data.
+# To do so, we can leverage Scikit-Learn's make_blobs() method.
+# This method will create however many classes (using the centers parameter) we want.
+# Specifically, let's do the following:
+# Create some multi-class data with make_blobs().
+# Turn the data into tensors (the default of make_blobs() is to use NumPy arrays).
+# Split the data into training and test sets using train_test_split().
+# Visualize the data.
+
+from sklearn.datasets import make_blobs
+from sklearn.model_selection import train_test_split
+
+#set hyperparameters for data creation
+NUM_CLASSES = 4
+NUM_FEATURES = 2
+RANDOM_SEED = 42
+
+#create multi class data
+X_blob, y_blob = make_blobs(n_samples=1000,
+                            n_features=NUM_FEATURES,#X features
+                            centers=NUM_CLASSES,#y labels
+                            cluster_std=1.5, # give the clusters a little shake up (try changing this to 1.0, the default)
+                            random_state=RANDOM_SEED)
+
+#Turn data into tensors
+X_blob = torch.from_numpy(X_blob).type(torch.float)
+y_blob = torch.from_numpy(y_blob).type(torch.LongTensor)
+# print(X_blob[:5], y_blob[:5])
+
+# split into train and test sets
+X_blob_train, X_blob_test, y_blob_train, y_blob_test = train_test_split(X_blob, y_blob, test_size=0.2, random_state=RANDOM_SEED)
+
+#plot data
+
+# plt.figure(figsize=(10,7))
+# plt.scatter(X_blob[:, 0], X_blob[:, 1],c=y_blob, cmap=plt.cm.RdYlBu)
+# plt.show()
+
+# 8.2 Building a multi-class classification model in PyTorch
+class BlobModel(nn.Module):
+    def __init__(self, input_features, output_features, hidden_units=8):
+        super().__init__()
+        self.linear_layer_stack = nn.Sequential(
+            nn.Linear(in_features=input_features, out_features=hidden_units),
+            nn.Linear(in_features=hidden_units, out_features=hidden_units),
+            nn.Linear(in_features=hidden_units, out_features=output_features)
+        )
+
+    def forward(self,x):
+        return self.linear_layer_stack(x)
+
+model_4 = BlobModel(input_features=NUM_FEATURES,
+                    output_features=NUM_CLASSES,
+                    hidden_units=8).to(device)
+
+# print(model_4)
+# 8.3 Creating a loss function and optimizer for a multi-class PyTorch model
+# Since we're working on a multi-class classification problem, we'll use the nn.CrossEntropyLoss() method as our loss function.
+
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model_4.parameters(), lr=0.1)
+
+# Perform a single forward pass on the data (we'll need to put it to the target device for it to work)
+# print(model_4(X_blob_train.to(device))[:5])
+
+# How many elements in a single prediction sample?
+# print(model_4(X_blob_train.to(device))[0].shape, NUM_CLASSES)
+
+# 8.5 Creating a training and testing loop for a multi-class PyTorch model
+# The only difference is that we'll be adjusting the steps to turn the model outputs (logits) to prediction probabilities
+# (using the softmax activation function) and then to prediction labels (by taking the argmax of the output of the softmax activation function).
+
+#fit the model
+torch.manual_seed(42)
+
+#set the number of epochs
+epochs = 100
+
+# put the data into target device
+X_blob_train, y_blob_train = X_blob_train.to(device), y_blob_train.to(device)
+X_blob_test, y_blob_test = X_blob_test.to(device), y_blob_test.to(device)
+
+for epoch in range(epochs):
+    model_4.train()
+    #forward pass
+    y_logits = model_4(X_blob_train)# model outputs raw logits
+    y_pred = torch.softmax(y_logits, dim=1).argmax(dim=1) # go from logits -> prediction probabilities -> prediction labels
+    #calculate loss and accuracy
+    loss = loss_fn(y_logits, y_blob_train)
+    acc = accuracy_fn(y_true=y_blob_train, y_pred=y_pred)
+    #optimizer zero grad
+    optimizer.zero_grad()
+    #loss backwards()
+    loss.backward()
+    #optimizer step
+    optimizer.step()
+    #Testing
+    model_4.eval()
+    with torch.inference_mode():
+        #forward pass
+        test_logits = model_4(X_blob_test)
+        test_pred = torch.softmax(test_logits, dim=1).argmax(dim=1)
+        #calculate test loss and accuracy
+        test_loss = loss_fn(test_logits, y_blob_test)
+        test_acc = accuracy_fn(y_true=y_blob_test,
+                               y_pred=test_pred)
+
+    # if epoch % 10 == 0:
+    #     print(f'Epoch {epoch}, Loss {loss:.5f}, Acc {acc:.2f}%, Test loss {test_loss:.5f}, Test acc {test_acc:.2f}%')
+
+# 8.6 Making and evaluating predictions with a PyTorch multi-class model
+# make predictions
+model_4.eval()
+with torch.inference_mode():
+    y_logits = model_4(X_blob_test)
+
+# print(y_logits[:10])
+
+# Though to evaluate them, they'll have to be in the same form as our labels (y_blob_test) which are in integer form.
+# Let's convert our model's prediction logits to prediction probabilities (using torch.softmax()) then to prediction labels (by taking the argmax()
+# of each sample).
+#turn predicted logits in prediction probabilities
+y_pred_probs = torch.softmax(y_logits, dim=1)
+
+#turn prediction probabilities into predicted labels
+y_preds = y_pred_lables.argmax(dim=1)
+
+# plt.figure(figsize=(12,6))
+# plt.subplot(1, 2, 1)
+# plt.title('Train')
+# plot_decision_boundary(model_4, X_blob_train, y_blob_train)
+# plt.subplot(1, 2, 2)
+# plt.title('Test')
+# plot_decision_boundary(model_4, X_blob_test, y_blob_test)
+# plt.show()
+
+# 9. More classification evaluation metrics
+# Accuracy	Out of 100 predictions, how many does your model get correct? E.g. 95% accuracy means it gets 95/100 predictions correct.	torchmetrics.Accuracy() or sklearn.metrics.accuracy_score()
+# Precision	Proportion of true positives over total number of samples. Higher precision leads to less false positives (model predicts 1 when it should've been 0).	torchmetrics.Precision() or sklearn.metrics.precision_score()
+# Recall	Proportion of true positives over total number of true positives and false negatives (model predicts 0 when it should've been 1). Higher recall leads to less false negatives.	torchmetrics.Recall() or sklearn.metrics.recall_score()
+# F1-score	Combines precision and recall into one metric. 1 is best, 0 is worst.	torchmetrics.F1Score() or sklearn.metrics.f1_score()
+# Confusion matrix	Compares the predicted values with the true values in a tabular way, if 100% correct, all values in the matrix will be top left to bottom right (diagnol line).	torchmetrics.ConfusionMatrix or sklearn.metrics.plot_confusion_matrix()
+# Classification report	Collection of some of the main classification metrics such as precision, recall and f1-score.	sklearn.metrics.classification_report()
+
+# Let's try the torchmetrics.Accuracy metric out.
+# Setup metric and make sure it's on the target device
+from torchmetrics import Accuracy
+torchmetrics_accuracy = Accuracy(task='multiclass', num_classes=4).to(device)
+
+# Calculate accuracy
+# torchmetrics_accuracy(y_preds, y_blob_test)
+
+# print(y_preds.shape, y_blob_test.shape)
+
+
+
+
 
 
 
