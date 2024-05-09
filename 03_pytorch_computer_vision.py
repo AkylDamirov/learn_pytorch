@@ -188,66 +188,66 @@ train_time_start_on_cpu = timer()
 epochs = 3
 
 #create training and testing loop
-for epoch in tqdm(range(epochs)):
-    # print(f'Epoch {epoch}\n----')
-    #Training
-    train_loss = 0
-    #Add a loop to loop through training batches
-    for batch, (X,y) in enumerate(train_dataloader):
-        model_0.train()
-        #forward pass
-        y_pred = model_0(X)
-
-        #calculate the loss
-        loss = loss_fn(y_pred, y)
-        train_loss += loss # accumulatively add up the loss per epoch
-
-        #optimizer zero grad
-        optimizer.zero_grad()
-
-        #loss backward
-        loss.backward()
-
-        #optimizer step
-        optimizer.step()
-
-        # Print out how many samples have been seen
-        # if batch % 400 == 0:
-        #     print(f'Looked at {batch * len(X)} / {len(train_dataloader.dataset)} samples')
-
-    #divide total train loss by length of train dataloader (average loss per batch per epoch)
-    train_loss /= len(train_dataloader)
-
-    #Testing
-    # setup variables for accumulatively adding up loss accuracy
-    test_loss, test_acc = 0,0
-    model_0.eval()
-    with torch.inference_mode():
-        for X,y in test_dataloader:
-            #forward pass
-            test_pred = model_0(X)
-
-            #calculate loss
-            test_loss += loss_fn(test_pred, y)
-
-            #calculate accuracy
-            test_acc += accuracy_fn(y_true=y, y_pred=test_pred.argmax(dim=1))
-
-        # Calculations on test metrics need to happen inside torch.inference_mode()
-        # Divide total test loss by length of test dataloader (per batch)
-        test_loss /= len(test_dataloader)
-
-        # Divide total accuracy by length of test dataloader (per batch)
-        test_acc /= len(test_dataloader)
-
-    #print out whats happening
-    # print(f'\nTrain loss: {train_loss:.5f}, test loss {test_loss:.5f}, Test acc {test_acc:.2f}%\n')
-
-#calculate the running time
-train_time_end_on_cpu = timer()
-total_train_time_model_0 = print_train_time(start=train_time_start_on_cpu,
-                                           end=train_time_end_on_cpu,
-                                           device=str(next(model_0.parameters()).device))
+# for epoch in tqdm(range(epochs)):
+#     # print(f'Epoch {epoch}\n----')
+#     #Training
+#     train_loss = 0
+#     #Add a loop to loop through training batches
+#     for batch, (X,y) in enumerate(train_dataloader):
+#         model_0.train()
+#         #forward pass
+#         y_pred = model_0(X)
+#
+#         #calculate the loss
+#         loss = loss_fn(y_pred, y)
+#         train_loss += loss # accumulatively add up the loss per epoch
+#
+#         #optimizer zero grad
+#         optimizer.zero_grad()
+#
+#         #loss backward
+#         loss.backward()
+#
+#         #optimizer step
+#         optimizer.step()
+#
+#         # Print out how many samples have been seen
+#         # if batch % 400 == 0:
+#         #     print(f'Looked at {batch * len(X)} / {len(train_dataloader.dataset)} samples')
+#
+#     #divide total train loss by length of train dataloader (average loss per batch per epoch)
+#     train_loss /= len(train_dataloader)
+#
+#     #Testing
+#     # setup variables for accumulatively adding up loss accuracy
+#     test_loss, test_acc = 0,0
+#     model_0.eval()
+#     with torch.inference_mode():
+#         for X,y in test_dataloader:
+#             #forward pass
+#             test_pred = model_0(X)
+#
+#             #calculate loss
+#             test_loss += loss_fn(test_pred, y)
+#
+#             #calculate accuracy
+#             test_acc += accuracy_fn(y_true=y, y_pred=test_pred.argmax(dim=1))
+#
+#         # Calculations on test metrics need to happen inside torch.inference_mode()
+#         # Divide total test loss by length of test dataloader (per batch)
+#         test_loss /= len(test_dataloader)
+#
+#         # Divide total accuracy by length of test dataloader (per batch)
+#         test_acc /= len(test_dataloader)
+#
+#     #print out whats happening
+#     # print(f'\nTrain loss: {train_loss:.5f}, test loss {test_loss:.5f}, Test acc {test_acc:.2f}%\n')
+#
+# #calculate the running time
+# train_time_end_on_cpu = timer()
+# total_train_time_model_0 = print_train_time(start=train_time_start_on_cpu,
+#                                            end=train_time_end_on_cpu,
+#                                            device=str(next(model_0.parameters()).device))
 
 # 4. Make predictions and get Model 0 results
 # Since we're going to be building a few models, it's a good idea to write some code to evaluate them all in similar ways.
@@ -370,25 +370,25 @@ torch.manual_seed(42)
 
 #measure time
 from timeit import default_timer as timer
-train_time_start_on_gpu = timer()
-
-epochs = 3
-for epoch in tqdm(range(epochs)):
-    print(f'Epoch {epoch}\n----')
-    train_step(data_loader=train_dataloader,
-               model=model_1,
-               loss_fn = loss_fn,
-               optimizer=optimizer,
-               accuracy_fn=accuracy_fn)
-
-    test_step(data_loader=test_dataloader,
-              model=model_1,
-              loss_fn=loss_fn,
-              accuracy_fn=accuracy_fn)
-
-
-train_time_end_on_gpu = timer()
-total_train_time_model_1 = print_train_time(start= train_time_start_on_cpu, end=train_time_end_on_gpu, device=device)
+# train_time_start_on_gpu = timer()
+#
+# epochs = 3
+# for epoch in tqdm(range(epochs)):
+#     print(f'Epoch {epoch}\n----')
+#     train_step(data_loader=train_dataloader,
+#                model=model_1,
+#                loss_fn = loss_fn,
+#                optimizer=optimizer,
+#                accuracy_fn=accuracy_fn)
+#
+#     test_step(data_loader=test_dataloader,
+#               model=model_1,
+#               loss_fn=loss_fn,
+#               accuracy_fn=accuracy_fn)
+#
+#
+# train_time_end_on_gpu = timer()
+# total_train_time_model_1 = print_train_time(start= train_time_start_on_cpu, end=train_time_end_on_gpu, device=device)
 
 
 # Let's evaluate our trained model_1 using our eval_model() function and see how it went.
@@ -445,7 +445,247 @@ torch.manual_seed(42)
 model_2 = FashionMNISTModelV2(input_shape=1, hidden_units=10, output_shape=len(class_names)).to(device)
 # print(model_2)
 
+#7.1 Stepping through nn.Conv2d()
+# We could start using our model above and see what happens but let's first step through the two new layers we've added:
+# nn.Conv2d(), also known as a convolutional layer.
+# nn.MaxPool2d(), also known as a max pooling layer.
 
+# To test the layers out, let's create some toy data just like the data used on CNN Explainer.
+torch.manual_seed(42)
+
+# Create sample batch of random numbers with same size as image batch
+images = torch.rand(size=(32, 3, 64, 64)) # [batch_size, color_channels, height, width]
+test_image = images[0] #get a single image for testing
+# print(f"Image batch shape: {images.shape} -> [batch_size, color_channels, height, width]")
+# print(f"Single image shape: {test_image.shape} -> [color_channels, height, width]")
+# print(f"Single image pixel values:\n{test_image}")
+
+# Let's create an example nn.Conv2d() with various parameters:
+
+# in_channels (int) - Number of channels in the input image.
+# out_channels (int) - Number of channels produced by the convolution.
+# kernel_size (int or tuple) - Size of the convolving kernel/filter.
+# stride (int or tuple, optional) - How big of a step the convolving kernel takes at a time. Default: 1.
+# padding (int, tuple, str) - Padding added to all four sides of input. Default: 0.
+
+# Example of what happens when you change the hyperparameters of a nn.Conv2d() layer.
+torch.manual_seed(42)
+# Create a convolutional layer with same dimensions as TinyVGG
+conv_layer = nn.Conv2d(in_channels=3,
+                       out_channels=10,
+                       kernel_size=3,
+                       stride=1,
+                       padding=0)
+
+#pass data through the convolutional layer
+# print(conv_layer(test_image))
+# 7.2 Stepping through nn.MaxPool2d()
+# Now let's check out what happens when we move data through nn.MaxPool2d().
+# Print out original image shape without and with unsqueezed dimension
+
+# print(f'Test image original step {test_image.shape}')
+# print(f'Test image with unsqueezed dimension {test_image.unsqueeze(dim=0).shape}')
+
+#create a sample nn.MaxPoo2d() layer
+max_pool_layer = nn.MaxPool2d(kernel_size=2)
+
+#pass the data through just the conv_layer
+test_image_through_conv = conv_layer(test_image.unsqueeze(dim=0))
+# print(f"Shape after going through conv_layer(): {test_image_through_conv.shape}")
+
+# Pass data through the max pool layer
+test_image_through_conv_and_max_pool = max_pool_layer(test_image_through_conv)
+# print(f"Shape after going through conv_layer() and max_pool_layer(): {test_image_through_conv_and_max_pool.shape}")
+
+# Notice the change in the shapes of what's happening in and out of a nn.MaxPool2d() layer.
+# The kernel_size of the nn.MaxPool2d() layer will effects the size of the output shape.
+# In our case, the shape halves from a 62x62 image to 31x31 image.
+# Let's see this work with a smaller tensor.
+
+# 7.3 Setup a loss function and optimizer for model_2
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(params=model_2.parameters(), lr=0.1)
+
+# 7.4 Training and testing model_2 using our training and test functions
+# We'll use our train_step() and test_step() functions we created before.
+torch.manual_seed(42)
+
+#measure time
+from timeit import default_timer as timer
+train_time_start_model_2 = timer()
+
+#train and test model
+epochs = 3
+
+for epoch in tqdm(range(epochs)):
+    print(f'Epoch {epoch}------')
+    train_step(data_loader=train_dataloader,
+               model=model_2,
+               loss_fn=loss_fn,
+               optimizer=optimizer,
+               accuracy_fn=accuracy_fn,
+               device=device)
+
+    test_step(data_loader=test_dataloader,
+              model=model_2,
+              loss_fn=loss_fn,
+              accuracy_fn=accuracy_fn,
+              device=device)
+
+train_time_end_model_2 = timer()
+total_train_time_model_2 = print_train_time(start=train_time_start_model_2, end=train_time_end_model_2, device=device)
+
+#get model_2 results
+model_2_results = eval_model(
+    model=model_2,
+    data_loader=test_dataloader,
+    loss_fn=loss_fn,
+    accuracy_fn=accuracy_fn
+)
+# print(model_2_results)
+# 8. Compare model results and training time
+# model_0 - our baseline model with two nn.Linear() layers.
+# model_1 - the same setup as our baseline model except with nn.ReLU() layers in between the nn.Linear() layers.
+# model_2 - our first CNN model that mimics the TinyVGG architecture on the CNN Explainer website.
+
+# Let's combine our model results dictionaries into a DataFrame and find out.
+import pandas as pd
+compare_results = pd.DataFrame([model_0_results, model_1_results, model_2_results])
+# print(compare_results)
+
+# Visualize our model results
+# compare_results.set_index('model_name')['model_acc'].plot(kind='barh')
+# plt.xlabel('accuracy (%)')
+# plt.ylabel('model')
+# plt.show()
+
+# 9. Make and evaluate random predictions with best model
+# Alright, we've compared our models to each other, let's further evaluate our best performing model, model_2.
+# To do so, let's create a function make_predictions() where we can pass the model and some data for it to predict on.
+def make_predictions(model:torch.nn.Module, data, device:torch.device=device):
+    pred_probs = []
+    model.eval()
+    with torch.inference_mode():
+        for sample in data:
+            #prepare sample
+            sample = torch.unsqueeze(sample, dim=0).to(device) # Add an extra dimension and send sample to device
+
+            #forward pass
+            pred_logit = model(sample)
+
+            #get prediction probability
+            pred_prob = torch.softmax(pred_logit.squeeze(), dim=0) # note: perform softmax on the "logits" dimension, not "batch" dimension (in this case we have a batch size of 1, so can perform on dim=0)
+
+            #get pred_prob off GPU for further calculations
+            pred_probs.append(pred_prob.cpu())
+
+    # Stack the pred_probs to turn list into a tensor
+    return torch.stack(pred_probs)
+
+import random
+random.seed(42)
+test_samples = []
+test_labels = []
+for sample, label in random.sample(list(test_data), k=9):
+    test_samples.append(sample)
+    test_labels.append(label)
+
+# View the first test sample shape and label
+# print(f'Test sample image shape {test_samples[0].shape}\n test sample label: {test_labels[0]} ({class_names[test_labels[0]]})')
+
+
+
+
+# Make predictions on test samples with model 2
+pred_probs = make_predictions(model=model_2, data=test_samples)
+# print(pred_probs[:2])
+
+# And now we can go from prediction probabilities to prediction labels by taking the torch.argmax()
+# of the output of the torch.softmax() activation function.
+
+# Turn the prediction probabilities into prediction labels by taking the argmax()
+pred_classes = pred_probs.argmax(dim=1)
+
+# print(pred_classes)
+
+#plot predictions
+plt.figure(figsize=(9,9))
+nrows = 3
+ncols = 3
+for i, sample in enumerate(test_samples):
+    #create a subplot
+    plt.subplot(nrows, ncols, i+1)
+
+    #plot the target image
+    plt.imshow(sample.squeeze(), cmap='gray')
+
+    #find the prediction label
+    pred_label = class_names[pred_classes[i]]
+
+    # Get the truth label (in text form, e.g. "T-shirt")
+    truth_label = class_names[test_labels[i]]
+
+    #title
+    title_text = f'Pred {pred_label}, truth {truth_label}'
+    # Check for equality and change title colour accordingly
+    if pred_label == truth_label:
+        plt.title(title_text, fontsize=10, c='g') #green if correct
+    else:
+        plt.title(title_text, fontsize=10, c='r') #red wrong
+
+    # plt.axis(False)
+    # plt.show()
+
+# 10. Making a confusion matrix for further prediction evaluation
+# To make a confusion matrix, we'll go through three steps:
+#
+# Make predictions with our trained model, model_2 (a confusion matrix compares predictions to true labels).
+# Make a confusion matrix using torchmetrics.ConfusionMatrix.
+# Plot the confusion matrix using mlxtend.plotting.plot_confusion_matrix().
+
+from tqdm.auto import tqdm
+
+#make predictions with trained model
+y_preds = []
+model_2.eval()
+with torch.inference_mode():
+    for X,y in tqdm(test_dataloader, desc='Making predictions'):
+        #send data and targets to target device
+        X,y = X.to(device), y.to(device)
+        #forward pass
+        y_logit = model_2(X)
+        # Turn predictions from logits -> prediction probabilities -> predictions labels
+        y_pred = torch.softmax(y_logit, dim=1).argmax(dim=1) # note: perform softmax on the "logits" dimension, not "batch" dimension (in this case we have a batch size of 32, so can perform on dim=1)
+        # Put predictions on CPU for evaluation
+        y_preds.append(y_pred.cpu())
+
+# Concatenate list of predictions into a tensor
+y_pred_tensor = torch.cat(y_preds)
+
+# import subprocess
+# try:
+#     import torchmetrics
+#     import mlxtend
+#     print(f"mlxtend version: {mlxtend.__version__}")
+#     assert int(mlxtend.__version__.split(".")[1]) >= 19, "mlxtend version should be 0.19.0 or higher"
+# except ImportError:
+#     subprocess.run(["pip3", "install", "-q", "torchmetrics", "-U", "mlxtend"])
+#     import mlxtend
+#     print(f"mlxtend version: {mlxtend.__version__}")
+
+from torchmetrics import ConfusionMatrix
+from mlxtend.plotting import plot_confusion_matrix
+# 2. Setup confusion matrix instance and compare predictions to targets
+confmat = ConfusionMatrix(num_classes=len(class_names), task='multiclass')
+confmat_tensor = confmat(preds=y_pred_tensor, target=test_data.targets)
+
+#plot the confusion matrix
+fig, ax = plot_confusion_matrix(
+    conf_mat=confmat_tensor.numpy(),  # matplotlib likes working with NumPy
+    class_names=class_names,
+    figsize=(10, 7)
+)
+# plt.show()
 
 
 
