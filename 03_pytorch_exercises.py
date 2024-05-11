@@ -192,29 +192,135 @@ def print_train_time(start, end, device: torch.device=None):
 
 
 #train and test model
-# train_time_start_model_2 = timer()
-# epochs = 3
-# for epoch in tqdm(range(epochs)):
-#     print(f'Epoch: {epoch}\n----')
-#     train_step(data_loader=train_dataloader,
-#                model=model_2,
-#                loss_fn=loss_fn,
-#                optimizer=optimizer,
-#                accuracy_fn=accuracy_fn,
-#                device=device
-#                )
-#     test_step(data_loader=test_dataloader,
-#               model=model_2,
-#               loss_fn=loss_fn,
-#               accuracy_fn=accuracy_fn,
-#               device=device)
-#
-# train_time_end_model_2 = timer()
-# total_train_time_model_2 = print_train_time(start=train_time_start_model_2, end=train_time_end_model_2, device=device)
+train_time_start_model_2 = timer()
+epochs = 3
+for epoch in tqdm(range(epochs)):
+    print(f'Epoch: {epoch}\n----')
+    train_step(data_loader=train_dataloader,
+               model=model_2,
+               loss_fn=loss_fn,
+               optimizer=optimizer,
+               accuracy_fn=accuracy_fn,
+               device=device
+               )
+    test_step(data_loader=test_dataloader,
+              model=model_2,
+              loss_fn=loss_fn,
+              accuracy_fn=accuracy_fn,
+              device=device)
+
+train_time_end_model_2 = timer()
+total_train_time_model_2 = print_train_time(start=train_time_start_model_2, end=train_time_end_model_2, device=device)
 
 
 #10. Make predictions using your trained model and visualize at least 5 of them comparing the prediciton to the target label.
 
+def make_predictions(model, data, device: torch.device=device):
+    pred_probs = []
+    model.eval()
+    with torch.inference_mode():
+        for sample in data:
+            #prepare sample
+            sample = torch.unsqueeze(sample, dim=0).to(device)
+
+            #forward pass
+            pred_logit = model(sample)
+
+            #get prediction probability
+            pred_prob = torch.softmax(pred_logit.squeeze(), dim=0)
+
+            # Get pred_prob off GPU for further calculations
+            pred_probs.append(pred_prob.cpu())
+
+   # Stack the pred_probs to turn list into a tensor
+    return torch.stack(pred_probs)
+
+import random
+random.seed(42)
+test_samples = []
+test_labels = []
+for sample, label in random.sample(list(test_data), k=9):
+    test_samples.append(sample)
+    test_labels.append(label)
+
+# Make predictions on test samples with model 2
+pred_probs = make_predictions(model=model_2, data=test_samples)
+
+# Turn the prediction probabilities into prediction labels by taking the argmax()
+pred_classes = pred_probs.argmax(dim=1)
+
+#plot predictions
+# plt.figure(figsize=(9,9))
+# nrows = 3
+# ncols = 3
+# for i, sample in enumerate(test_samples):
+#     #create subplot
+#     plt.subplot(nrows, ncols, i+1)
+#
+#     #plot the target image
+#     plt.imshow(sample.squeeze(), cmap='gray')
+#
+#     # Find the prediction label
+#     pred_label = class_names[pred_classes[i]]
+#
+#     # Get the truth label
+#     truth_label = class_names[test_labels[i]]
+#
+#     # Create the title text of the plot
+#     title_text = f'Pred {pred_label} Truth {truth_label}'
+#
+#     # Check for equality and change title colour accordingly
+#     if pred_label==truth_label:
+#         plt.title(title_text, fontsize=10, c='g')
+#     else:
+#         plt.title(title_text, fontsize=10, c='r')
+#     plt.axis(False)
+# plt.show()
+
+#11. Plot a confusion matrix comparing your model's predictions to the truth labels.
+# To make a confusion matrix, we'll go through three steps:
+#
+# Make predictions with our trained model, model_2 (a confusion matrix compares predictions to true labels).
+# Make a confusion matrix using torchmetrics.ConfusionMatrix.
+# Plot the confusion matrix using mlxtend.plotting.plot_confusion_matrix().
+
+from tqdm.auto import tqdm
+
+#make predictions with trained model
+y_preds = []
+model_2.eval()
+with torch.inference_mode():
+    for X,y in tqdm(test_dataloader, desc='Making predictions'):
+        X,y = X.to(device), y.to(device)
+
+        #forward pass
+        y_logit = model_2(X)
+
+        # Turn predictions from logits -> prediction probabilities -> predictions labels
+        y_pred = torch.softmax(y_logit, dim=1).argmax(dim=1)
+
+        # Put predictions on CPU for evaluation
+        y_preds.append(y_pred.cpu())
+
+# Concatenate list of predictions into a tensor
+y_pred_tensor = torch.cat(y_preds)
+
+# Make a confusion matrix using torchmetrics.ConfusionMatrix.
+import torchmetrics, mlxtend
+from torchmetrics import ConfusionMatrix
+from mlxtend.plotting import plot_confusion_matrix
+
+# 2. Setup confusion matrix instance and compare predictions to targets
+confmat = ConfusionMatrix(num_classes=len(class_names), task='multiclass')
+confmat_tensor = confmat(preds=y_pred_tensor, target=test_data.targets)
+
+#plot confusion matrix
+fig, ax = plot_confusion_matrix(
+    conf_mat=confmat_tensor.numpy(),
+    class_names=class_names,
+    figsize=(10, 7)
+)
+plt.show()
 
 
 
