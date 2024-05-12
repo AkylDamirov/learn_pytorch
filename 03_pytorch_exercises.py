@@ -315,12 +315,84 @@ confmat = ConfusionMatrix(num_classes=len(class_names), task='multiclass')
 confmat_tensor = confmat(preds=y_pred_tensor, target=test_data.targets)
 
 #plot confusion matrix
-fig, ax = plot_confusion_matrix(
-    conf_mat=confmat_tensor.numpy(),
-    class_names=class_names,
-    figsize=(10, 7)
+# fig, ax = plot_confusion_matrix(
+#     conf_mat=confmat_tensor.numpy(),
+#     class_names=class_names,
+#     figsize=(10, 7)
+# )
+# plt.show()
+
+#12. Create a random tensor of shape [1, 3, 64, 64] and pass it through a nn.Conv2d() layer with various
+# hyperparameter settings (these can be any settings you choose), what do you notice if the kernel_size parameter goes up and down?
+# torch.manual_seed(42)
+# images_0 = torch.rand(size=(1,3,64,64))
+# test_image = images_0[0] # get a single image for testing
+#
+# conv_layer = nn.Conv2d(in_channels=3,
+#                        out_channels=10,
+#                        kernel_size=3,
+#                        stride=1,
+#                        padding=0)
+#
+# print(conv_layer(test_image))
+#13. Use a model similar to the trained model_2 from this notebook to make predictions on the test torchvision.datasets.FashionMNIST dataset.
+# Then plot some predictions where the model was wrong alongside what the label of the image should've been.
+# After visualing these predictions do you think it's more of a modelling error or a data error?
+# As in, could the model do better or are the labels of the data too close to each other (e.g. a "Shirt" label is too close to "T-shirt/top")?
+
+
+#load FashionMNIST dataset
+fashion_mnist_train = datasets.FashionMNIST(
+    root='data',
+    train=True,
+    download=True,
+    transform=ToTensor()
 )
+
+fashion_mnist_test = datasets.FashionMNIST(
+    root='data',
+    train=False,
+    download=True,
+    transform=ToTensor()
+)
+
+#create dataloaders
+fashion_train_dataloader = DataLoader(fashion_mnist_train, batch_size=BATCH_SIZE, shuffle=True)
+fashion_test_dataloader = DataLoader(fashion_mnist_test, batch_size=BATCH_SIZE, shuffle=False)
+
+#create a model similar to model_2
+#its above (fashionMNISTmodelV2)
+
+#initialize the fashionMNIST model
+fashion_model = FashionMNISTModelV2(input_shape=1, hidden_units=10, output_shape=len(class_names)).to(device)
+
+#make predictions on the test set
+fashion_model.eval()
+fashion_preds = []
+fashion_labels = []
+with torch.no_grad():
+    for images, labels in tqdm(fashion_test_dataloader, desc='Making predictions'):
+        images, labels = images.to(device), labels.to(device)
+        outputs = fashion_model(images)
+        preds = torch.argmax(outputs, dim=1)
+        fashion_preds.extend(preds.cpu())
+        fashion_labels.extend(labels.cpu())
+
+#convert prediction and labels to numpy arrays
+fashion_preds = torch.tensor(fashion_preds).numpy()
+fashion_labels = torch.tensor(fashion_labels).numpy()
+
+# Plot some predictions where the model was wrong alongside the correct labels
+plt.figure(figsize=(12, 8))
+
+for i in range(9):
+    plt.subplot(3, 3, i+1)
+    plt.imshow(fashion_mnist_test[i][0].squeeze(), cmap='gray')
+    plt.title(f"Predicted: {class_names[fashion_preds[i]]}, Actual: {class_names[fashion_labels[i]]}")
+    plt.axis('off')
 plt.show()
+
+
 
 
 
