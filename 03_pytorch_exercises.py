@@ -190,7 +190,6 @@ def print_train_time(start, end, device: torch.device=None):
     return total_time
 
 
-
 #train and test model
 train_time_start_model_2 = timer()
 epochs = 3
@@ -383,14 +382,14 @@ fashion_preds = torch.tensor(fashion_preds).numpy()
 fashion_labels = torch.tensor(fashion_labels).numpy()
 
 # Plot some predictions where the model was wrong alongside the correct labels
-plt.figure(figsize=(12, 8))
-
-for i in range(9):
-    plt.subplot(3, 3, i+1)
-    plt.imshow(fashion_mnist_test[i][0].squeeze(), cmap='gray')
-    plt.title(f"Predicted: {class_names[fashion_preds[i]]}, Actual: {class_names[fashion_labels[i]]}")
-    plt.axis('off')
-plt.show()
+# plt.figure(figsize=(12, 8))
+#
+# for i in range(9):
+#     plt.subplot(3, 3, i+1)
+#     plt.imshow(fashion_mnist_test[i][0].squeeze(), cmap='gray')
+#     plt.title(f"Predicted: {class_names[fashion_preds[i]]}, Actual: {class_names[fashion_labels[i]]}")
+#     plt.axis('off')
+# plt.show()
 
 
 
