@@ -704,7 +704,7 @@ optimizer = torch.optim.Adam(params=model_0.parameters(), lr=0.001)
 
 #start timer
 from timeit import default_timer as timer
-start_timer = timer()
+# start_timer = timer()
 
 #train model_0
 if __name__ == '__main__':
@@ -716,8 +716,8 @@ if __name__ == '__main__':
                             epochs=NUM_EPOCHS)
 
     # End the timer and print out how long it took
-    end_time = timer()
-    print(f'Total training time {end_time-start_timer:.3f} seconds')
+    # end_time = timer()
+    # print(f'Total training time {end_time-start_timer:.3f} seconds')
 
     # 7.8 Plot the loss curves of Model 0
     # Check the model_0_results keys
@@ -758,8 +758,93 @@ if __name__ == '__main__':
 
         plt.show()
 
-    plot_loss_curves(model_0_results)
+    # plot_loss_curves(model_0_results)
 
+
+# 9. Model 1: TinyVGG with Data Augmentation
+# This time, let's load in the data and use data augmentation to see if it improves our results in anyway.
+# First, we'll compose a training transform to include transforms.TrivialAugmentWide() as well as resize and turn our images into tensors.
+
+# 9.1 Create transform with data augmentation
+# Create training transform with TrivialAugment
+train_transform_trivial_augment = transforms.Compose([
+    transforms.Resize((64, 64)),
+    transforms.TrivialAugmentWide(num_magnitude_bins=31),
+    transforms.ToTensor()
+])
+
+# Create testing transform (no data augmentation)
+test_transform = transforms.Compose([
+    transforms.Resize((64, 64)),
+    transforms.ToTensor()
+])
+# Now let's turn our images into Dataset's using torchvision.datasets.ImageFolder() and then into DataLoader's with torch.utils.data.DataLoader()
+# 9.2 Create train and test Dataset's and DataLoader's
+# We'll make sure the train Dataset uses the train_transform_trivial_augment and the test Dataset uses the test_transform
+
+#turn image folders into Datasets
+train_data_augmented = datasets.ImageFolder(train_dir, transform=train_transform_trivial_augment)
+test_data_simple = datasets.ImageFolder(test_dir, transform=test_transform)
+
+# print(train_data_augmented, test_data_simple)
+
+#turn Datasets into Dataloaders
+import os
+
+BATCH_SIZE = 32
+NUM_WORKERS = os.cpu_count()
+
+torch.manual_seed(42)
+train_dataloader_augment = DataLoader(train_data_augmented,
+                                      batch_size=BATCH_SIZE,
+                                      shuffle=True,
+                                      num_workers=NUM_WORKERS)
+
+test_dataloader_simple = DataLoader(test_data_simple,
+                                    batch_size=BATCH_SIZE,
+                                    shuffle=False,
+                                    num_workers=NUM_WORKERS)
+
+# print(train_dataloader_augment, test_dataloader_simple)
+# 9.3 Construct and train Model 1
+
+#create model_1 and send it to the target device
+torch.manual_seed(42)
+model_1 = TinyVGG(
+    input_shape=3,
+    hidden_units=10,
+    output_shape=len(train_data_augmented.classes)
+).to(device)
+
+# Since we've already got functions for the training loop (train_step()) and testing loop (test_step()) and a function to put them together in train(), let's reuse those.
+#set random seeds
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
+
+#set number of epochs
+NUM_EPOCHS = 5
+
+#setup loss function and optimizer
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(params=model_1.parameters(),lr=0.001)
+
+#start the timer
+# start_timer = timer()
+
+#train model_1
+if __name__ == '__main__':
+    model_1_results = train(model=model_1,
+                            train_dataloader=train_dataloader_augment,
+                            test_dataloader=test_dataloader_simple,
+                            optimizer=optimizer,
+                            loss_fn=loss_fn,
+                            epochs=NUM_EPOCHS)
+
+    # end_timer = timer()
+    # print(f'Total training time {end_timer-start_timer:.3f} seconds')
+
+    # 9.4 plot loss curves of model_1
+    plot_loss_curves(model_1_results)
 
 
 
