@@ -970,25 +970,71 @@ with torch.inference_mode():
     custom_image_pred = model_1(custom_image_transformed.unsqueeze(dim=0).to(device))
 
 # Print out prediction logits
-print(f'Prediction logits {custom_image_pred}')
+# print(f'Prediction logits {custom_image_pred}')
 
 # Convert logits -> prediction probabilities (using torch.softmax() for multi-class classification)
 custom_image_pred_probs = torch.softmax(custom_image_pred, dim=1)
-print(f'Prediction probabilities {custom_image_pred_probs}')
+# print(f'Prediction probabilities {custom_image_pred_probs}')
 
 # Convert prediction probabilities -> prediction labels
-custom_image_pred_labels = torch.argmax(custom_image_pred_probs, dim=1)
-print(f'Prediction label {custom_image_pred_labels}')
+custom_image_pred_label = torch.argmax(custom_image_pred_probs, dim=1)
+# print(f'Prediction label {custom_image_pred_labels}')
 
+# We can convert it to a string class name prediction by indexing on the class_names list.
+#find predicted label
+custom_image_pred_class = class_names[custom_image_pred_label.cpu()]
+# print(custom_image_pred_class)
 
+# 11.3 Putting custom image prediction together: building a function
+def pred_and_plot_image(model: torch.nn.Module,
+                        image_path,
+                        class_names,
+                        transform=None,
+                        device: torch.device = device):
+    #load in image and convert the tensor values to float32
+    target_image = torchvision.io.read_image(str(image_path)).type(torch.float32)
 
+    #divide the image pixel values by 255 to get them between [0, 1]
+    target_image = target_image / 255
 
+    #transform if necessary
+    if transform:
+        target_image = transform(target_image)
 
+    #make sure the model on the target device
+    model.to(device)
 
+    #turn on model evaluation mode and inference mode
+    model.eval()
+    with torch.inference_mode():
+        #add extra dimension to the image
+        target_image = target_image.unsqueeze(dim=0)
 
+        #make prediction on image with an extra dimension and send it to target device
+        target_image_pred = model(target_image.to(device))
 
+    # Convert logits -> prediction probabilities(using torch.softmax() for multi -class classification)
+    target_image_pred_probs = torch.softmax(target_image_pred, dim=1)
 
+    # Convert prediction probabilities -> prediction labels
+    target_image_pred_label = torch.argmax(target_image_pred_probs, dim=1)
 
+    # plot the image alongside the prediction and prediction probability
+    plt.imshow(target_image.squeeze().permute(1,2,0))
+    if class_names:
+        title = f'Pred {class_names[target_image_pred_label.cpu()]} | Prob {target_image_pred_probs.max().cpu():.3f}'
+    else:
+        title = f'Pred {target_image_pred_label} | Prob {target_image_pred_probs.max().cpu():.3f}'
+    plt.title(title)
+    plt.axis(False)
+    plt.show()
+
+#pred on our custom image
+# pred_and_plot_image(model=model_1,
+#                     image_path=custom_image_path,
+#                     class_names=class_names,
+#                     transform=custom_image_transform,
+#                     device=device)
 
 
 
