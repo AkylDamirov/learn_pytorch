@@ -192,20 +192,20 @@ img_permute = img.permute(1,2,0)
 # 4.1 Turn loaded images into DataLoader's
 #turn train and test Datasets into Dataloaders
 from torch.utils.data import DataLoader
-if __name__ == '__main__':
-    train_dataloader = DataLoader(dataset=train_data,
-                                  batch_size=1,# how many samples per batch?
-                                  num_workers=1,# how many subprocesses to use for data loading? (higher = more)
-                                  shuffle=True)# shuffle the data?
+# if __name__ == '__main__':
+train_dataloader = DataLoader(dataset=train_data,
+                              batch_size=1,# how many samples per batch?
+                              num_workers=0,# how many subprocesses to use for data loading? (higher = more) #change (1)
+                              shuffle=True)# shuffle the data?
 
-    test_dataloader = DataLoader(dataset=test_data,
+test_dataloader = DataLoader(dataset=test_data,
                                  batch_size=1,
-                                 num_workers=1,
+                                 num_workers=0, #change (1)
                                  shuffle=False)
 
     # Now our data is iterable.
 
-    img, label = next(iter(train_dataloader))
+img, label = next(iter(train_dataloader))
     # Batch size will now be 1, try changing the batch_size parameter above and see what happens
     # print(f"Image shape: {img.shape} -> [batch_size, color_channels, height, width]")
     # print(f"Label shape: {label.shape}")
@@ -454,19 +454,19 @@ from torch.utils.data import DataLoader
 
 #setup batch size and number of workers
 BATCH_SIZE = 32
-NUM_WORKERS = os.cpu_count()
+# NUM_WORKERS = os.cpu_count()
 # print(f'Creating Dataloaders with batch size {BATCH_SIZE} and {NUM_WORKERS} workers')
 
 #create Dataloader's
 train_dataloader_simple = DataLoader(train_data_simple,
                                      batch_size=BATCH_SIZE,
                                      shuffle=True,
-                                     num_workers=True)
+                                     num_workers=False) #change (True)
 
 test_dataloader_simple = DataLoader(test_data_simple,
                                     batch_size=BATCH_SIZE,
                                     shuffle=False,
-                                    num_workers=NUM_WORKERS)
+                                    num_workers=0) #change (NUM_WORKERS)
 
 # print(train_dataloader_simple, test_dataloader_simple)
 
@@ -529,17 +529,17 @@ model_0 = TinyVGG(input_shape=3,#number of color channels
 # (since we're working with multi-class data) and convert the prediction probabilities to prediction labels with torch.argmax().
 
 #get batch of images and labels from the Dataloader
-if __name__ == '__main__':
-    img_batch, label_batch = next(iter(train_dataloader_simple))
+# if __name__ == '__main__':
+img_batch, label_batch = next(iter(train_dataloader_simple))
 
-    #get a single image from the batch and unsqueeze the image so its shape fits the model
-    img_single, label_single = img_batch[0].unsqueeze(dim=0), label_batch[0]
-    # print(f'Single image shape {img_single.shape}\n')
+        #get a single image from the batch and unsqueeze the image so its shape fits the model
+img_single, label_single = img_batch[0].unsqueeze(dim=0), label_batch[0]
+        # print(f'Single image shape {img_single.shape}\n')
 
-    #perform forward pass on a single pass
-    model_0.eval()
-    with torch.inference_mode():
-        pred = model_0(img_single.to(device))
+        #perform forward pass on a single pass
+model_0.eval()
+with torch.inference_mode():
+    pred = model_0(img_single.to(device))
 
     # 4. Print out what's happening and convert model logits -> pred probs -> pred label
     # print(f"Output logits:\n{pred}\n")
@@ -707,13 +707,14 @@ from timeit import default_timer as timer
 # start_timer = timer()
 
 #train model_0
-if __name__ == '__main__':
-    model_0_results = train(model=model_0,
-                            train_dataloader=train_dataloader_simple,
-                            test_dataloader=test_dataloader_simple,
-                            optimizer=optimizer,
-                            loss_fn=loss_fn,
-                            epochs=NUM_EPOCHS)
+# if __name__ == '__main__':
+#     global model_0_results        #change
+model_0_results = train(model=model_0,
+                        train_dataloader=train_dataloader_simple,
+                        test_dataloader=test_dataloader_simple,
+                        optimizer=optimizer,
+                        loss_fn=loss_fn,
+                        epochs=NUM_EPOCHS)
 
     # End the timer and print out how long it took
     # end_time = timer()
@@ -724,39 +725,39 @@ if __name__ == '__main__':
     # print(model_0_results.keys())
 
 # We'll need to extract each of these keys and turn them into a plot.
-    def plot_loss_curves(results):
-        #get the loss values of the results dictionary (training and test)
-        loss = results['train_loss']
-        test_loss = results['test_loss']
+def plot_loss_curves(results):
+    #get the loss values of the results dictionary (training and test)
+    loss = results['train_loss']
+    test_loss = results['test_loss']
 
-        #get the accuracy values of the results dictionary (training and test)
-        accuracy = results['train_acc']
-        test_accuracy = results['test_acc']
+    #get the accuracy values of the results dictionary (training and test)
+    accuracy = results['train_acc']
+    test_accuracy = results['test_acc']
 
-        #figure out how many epochs there were
-        epochs = range(len(results['train_loss']))
+    #figure out how many epochs there were
+    epochs = range(len(results['train_loss']))
 
-        #setup a plot
-        plt.figure(figsize=(15, 7))
+    #setup a plot
+    plt.figure(figsize=(15, 7))
 
-        #plot loss
-        plt.subplot(1, 2, 1)
-        plt.plot(epochs, loss, label='train_loss')
-        plt.plot(epochs, test_loss, label='test_loss')
-        plt.title('Loss')
-        plt.xlabel('Epochs')
-        plt.legend()
+    #plot loss
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, loss, label='train_loss')
+    plt.plot(epochs, test_loss, label='test_loss')
+    plt.title('Loss')
+    plt.xlabel('Epochs')
+    plt.legend()
 
 
-        #plot accuracy
-        plt.subplot(1, 2, 2)
-        plt.plot(epochs, accuracy, label='train_accuracy')
-        plt.plot(epochs, test_accuracy, label='test_accuracy')
-        plt.title('Accuracy')
-        plt.xlabel('Epochs')
-        plt.legend()
+    #plot accuracy
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, accuracy, label='train_accuracy')
+    plt.plot(epochs, test_accuracy, label='test_accuracy')
+    plt.title('Accuracy')
+    plt.xlabel('Epochs')
+    plt.legend()
 
-        plt.show()
+    plt.show()
 
     # plot_loss_curves(model_0_results)
 
@@ -792,18 +793,18 @@ test_data_simple = datasets.ImageFolder(test_dir, transform=test_transform)
 import os
 
 BATCH_SIZE = 32
-NUM_WORKERS = os.cpu_count()
+# NUM_WORKERS = os.cpu_count()
 
 torch.manual_seed(42)
 train_dataloader_augment = DataLoader(train_data_augmented,
                                       batch_size=BATCH_SIZE,
                                       shuffle=True,
-                                      num_workers=NUM_WORKERS)
+                                      num_workers=0) #changed (NUM_WORKERS)
 
 test_dataloader_simple = DataLoader(test_data_simple,
                                     batch_size=BATCH_SIZE,
                                     shuffle=False,
-                                    num_workers=NUM_WORKERS)
+                                    num_workers=0) #changed (NUM_WORKERS)
 
 # print(train_dataloader_augment, test_dataloader_simple)
 # 9.3 Construct and train Model 1
@@ -832,19 +833,158 @@ optimizer = torch.optim.Adam(params=model_1.parameters(),lr=0.001)
 # start_timer = timer()
 
 #train model_1
-if __name__ == '__main__':
-    model_1_results = train(model=model_1,
-                            train_dataloader=train_dataloader_augment,
-                            test_dataloader=test_dataloader_simple,
-                            optimizer=optimizer,
-                            loss_fn=loss_fn,
-                            epochs=NUM_EPOCHS)
+# if __name__ == '__main__':
+#     global model_1_results
+model_1_results = train(model=model_1,
+                        train_dataloader=train_dataloader_augment,
+                        test_dataloader=test_dataloader_simple,
+                        optimizer=optimizer,
+                        loss_fn=loss_fn,
+                        epochs=NUM_EPOCHS)
 
     # end_timer = timer()
     # print(f'Total training time {end_timer-start_timer:.3f} seconds')
 
     # 9.4 plot loss curves of model_1
-    plot_loss_curves(model_1_results)
+    # plot_loss_curves(model_1_results)
+
+# 10. Compare model results
+import pandas as pd
+model_0_df = pd.DataFrame(model_0_results)
+model_1_df = pd.DataFrame(model_1_results)
+# print(model_0_df)
+
+# And now we can write some plotting code using matplotlib to visualize the results of model_0 and model_1 together.
+#setup a plot
+# plt.figure(figsize=(15, 10))
+#
+# #get number of epochs
+# epochs = range(len(model_0_df))
+#
+# #plot train loss
+# plt.subplot(2,2,1)
+# plt.plot(epochs, model_0_df['train_loss'], label='Model 0')
+# plt.plot(epochs, model_1_df['train_loss'], label='Model 1')
+# plt.title('Train Loss')
+# plt.xlabel('Epochs')
+# plt.legend()
+#
+# #plot test loss
+# plt.subplot(2, 2, 2)
+# plt.plot(epochs, model_0_df['test_loss'], label='Model 0')
+# plt.plot(epochs, model_1_df['test_loss'], label='Model 1')
+# plt.title('Test loss')
+# plt.xlabel('Epochs')
+# plt.legend()
+#
+# #plot train accuracy
+# plt.subplot(2, 2, 3)
+# plt.plot(epochs, model_0_df['train_acc'], label='Model 0')
+# plt.plot(epochs, model_1_df['train_acc'], label='Model 1')
+# plt.title('Train accuracy')
+# plt.xlabel('Epochs')
+# plt.legend()
+#
+# #plot test accuracy
+# plt.subplot(2, 2, 4)
+# plt.plot(epochs, model_0_df['test_acc'], label='Model 0')
+# plt.plot(epochs, model_1_df['test_acc'], label='Model 1')
+# plt.title('Test accuracy')
+# plt.xlabel('Epochs')
+# plt.legend()
+#
+# plt.show()
+
+# 11. Make a prediction on a custom image
+#Download custom image
+import requests
+
+#setup custom image path
+custom_image_path = data_path / '04-pizza-dad.jpeg'
+
+# Download the image if it doesn't already exist
+# if not custom_image_path.is_file():
+#     with open(custom_image_path, 'wb') as f:
+#         request = requests.get("https://raw.githubusercontent.com/mrdbourke/pytorch-deep-learning/main/images/04-pizza-dad.jpeg")
+#         print(f'Downloading {custom_image_path}...')
+#         f.write(request.content)
+# else:
+#     print(f'{custom_image_path} already exists, skipping download.')
+
+# 11.1 Loading in a custom image with PyTorch
+# Since we want to load in an image, we'll use torchvision.io.read_image().
+# This method will read a JPEG or PNG image and turn it into a 3 dimensional RGB or grayscale torch.Tensor with values of datatype uint8 in range [0, 255].
+
+import torchvision
+
+#read in custom image
+custom_image_uint8 = torchvision.io.read_image(str(custom_image_path))
+
+# print(f'Custom image tensor \n {custom_image_uint8}\n')
+# print(f'Custom image shape {custom_image_uint8.shape}\n')
+# print(f'Custom image dtype {custom_image_uint8.dtype}')
+
+# we'll need to convert it to the same format as the data our model is trained on.
+# Load in custom image and convert the tensor values to float32
+custom_image = torchvision.io.read_image(str(custom_image_path)).type(torch.float32)
+
+# Divide the image pixel values by 255 to get them between [0, 1]
+custom_image = custom_image / 255
+
+# print(f'Custom image tensor \n {custom_image}\n')
+# print(f'Custom image shape {custom_image.shape}\n')
+# print(f'Custom image dtype {custom_image.dtype}')
+
+# 11.2 Predicting on custom images with a trained PyTorch model
+#plot custom image
+# plt.imshow(custom_image.permute(1, 2, 0)) # need to permute image dimensions from CHW -> HWC otherwise matplotlib will error
+# plt.title(f'Image shape {custom_image.shape}')
+# plt.axis(False)
+# plt.show()
+
+# Now how could we get our image to be the same size as the images our model was trained on?
+# One way to do so is with torchvision.transforms.Resize().
+
+#Create transform pipleine to resize image
+custom_image_transform = transforms.Compose([
+    transforms.Resize((64, 64))
+])
+
+#transform the target image
+custom_image_transformed = custom_image_transform(custom_image)
+
+# print(f'Original shape {custom_image.shape}')
+# print(f'New shape {custom_image_transformed.shape}')
+
+#predict custom image
+
+model_1.eval()
+with torch.inference_mode():
+    #add an extra dimension to image
+    custom_image_transformed_with_batch_size= custom_image_transformed.unsqueeze(dim=0)
+
+    # print(f'Custom image transformed shape: {custom_image_transformed.shape}')
+    # print(f'unsqueezed custom image shape: {custom_image_transformed_with_batch_size.shape} ')
+
+    #make predictions on image with extra dimension
+    custom_image_pred = model_1(custom_image_transformed.unsqueeze(dim=0).to(device))
+
+# Print out prediction logits
+print(f'Prediction logits {custom_image_pred}')
+
+# Convert logits -> prediction probabilities (using torch.softmax() for multi-class classification)
+custom_image_pred_probs = torch.softmax(custom_image_pred, dim=1)
+print(f'Prediction probabilities {custom_image_pred_probs}')
+
+# Convert prediction probabilities -> prediction labels
+custom_image_pred_labels = torch.argmax(custom_image_pred_probs, dim=1)
+print(f'Prediction label {custom_image_pred_labels}')
+
+
+
+
+
+
 
 
 
