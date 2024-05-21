@@ -9,9 +9,32 @@ import requests
 import zipfile
 from pathlib import Path
 
+#old
+# #setup path to data folder
+# data_path = Path('data/')
+# image_path = data_path / 'pizza_steak_sushi'
+#
+# if image_path.is_dir():
+#     print(f'{image_path} is exist')
+# else:
+#     print(f'Did not find {image_path}, creating one...')
+#     image_path.mkdir(parents=True, exist_ok=True)
+#
+#     #download
+#     with open(data_path / "pizza_steak_sushi.zip", 'wb') as f:
+#         request = requests.get('https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi.zip')
+#         print('Downloading pizza steak sushi data...')
+#         f.write(request.content)
+#
+#     #unzip
+#     with zipfile.ZipFile(data_path / 'pizza_steak_sushi.zip', 'r') as zip_ref:
+#         print('Unzipping data')
+#         zip_ref.extractall(image_path)
+
+#new one
 #setup path to data folder
 data_path = Path('data/')
-image_path = data_path / 'pizza_steak_sushi'
+image_path = data_path / 'pizza_steak_sushi_20'
 
 if image_path.is_dir():
     print(f'{image_path} is exist')
@@ -20,13 +43,13 @@ else:
     image_path.mkdir(parents=True, exist_ok=True)
 
     #download
-    with open(data_path / "pizza_steak_sushi.zip", 'wb') as f:
-        request = requests.get('https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi.zip')
+    with open(data_path / "pizza_steak_sushi_20.zip", 'wb') as f:
+        request = requests.get('https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi_20_percent.zip')
         print('Downloading pizza steak sushi data...')
         f.write(request.content)
 
     #unzip
-    with zipfile.ZipFile(data_path / 'pizza_steak_sushi.zip', 'r') as zip_ref:
+    with zipfile.ZipFile(data_path / 'pizza_steak_sushi_20.zip', 'r') as zip_ref:
         print('Unzipping data')
         zip_ref.extractall(image_path)
 
@@ -309,9 +332,77 @@ model_0_results = train(model=model_0,
 # You can also find the already formatted double data (20% instead of 10% subset) dataset on GitHub,
 # you will need to write download code like in exercise 2 to get it into this notebook.
 
+# with 20% data
+# Epoch: 20 | train_loss: 0.6821 | train_acc: 0.7125 | test_loss: 0.8991 | test_acc: 0.5557
+
+#8. Make a prediction on your own custom image of pizza/steak/sushi (you could even download one from the internet) and share your prediction.
+# Does the model you trained in exercise 7 get it right?
+# If not, what do you think you could do to improve it?
+image_address = 'https://imgproxy.sbermarket.ru/imgproxy/size-680-680/czM6Ly9jb250ZW50LWltYWdlcy1wcm9kL3Byb2R1Y3RzLzMxNTkzMjg3L29yaWdpbmFsLzEvMjAyNC0wMi0xNlQyMyUzQTE1JTNBMzEuMzM1NTg3JTJCMDAlM0EwMC8zMTU5MzI4N18xLmpwZw==.jpg?raw=true'
+custom_image_path = data_path / 'pizza_2.jpeg'
 
 
+if not custom_image_path.is_file():
+    with open(custom_image_path, "wb") as f:
+        # When downloading from GitHub, need to use the "raw" file link
+        request = requests.get(image_address) ### <- CHANGED
+        print(f"Downloading {custom_image_path}...")
+        f.write(request.content)
+else:
+    print(f"{custom_image_path} already exists, skipping download.")
 
+# Since we want to load in an image, we'll use torchvision.io.read_image().
+import torchvision
+import matplotlib.pyplot as plt
+def pred_and_plot_image(model: torch.nn.Module,
+                        image_path,
+                        class_names,
+                        transform=None,
+                        device: torch.device=device):
+    # Load in image and convert the tensor values to float32
+    target_image = torchvision.io.read_image(str(image_path)).type(torch.float32)
 
+    # Divide the image pixel values by 255 to get them between[0, 1]
+    target_image = target_image / 255
 
+    #transform in necessary
+    if transform:
+        target_image = transform(target_image)
 
+    #make sure if model in on the target device
+    model.to(device)
+
+    model.eval()
+    with torch.inference_mode():
+        #add an extra dimension to the image
+        target_image = target_image.unsqueeze(dim=0)
+
+        # Make a prediction on image with an extra dimension and send it to the target device
+        target_image_pred = model(target_image.to(device))
+
+    # Convert logits -> prediction probabilities(using torch.softmax() for multi -class classification)
+    target_image_pred_probs = torch.softmax(target_image_pred, dim=1)
+
+    # Convert prediction probabilities -> prediction labels
+    target_image_pred_label = torch.argmax(target_image_pred_probs, dim=1)
+
+    # Plot the image alongside the prediction and prediction probability
+    plt.imshow(target_image.squeeze().permute(1,2,0))
+    if class_names:
+        title = f"Pred: {class_names[target_image_pred_label.cpu()]} | Prob: {target_image_pred_probs.max().cpu():.3f}"
+    else:
+        title = f"Pred: {target_image_pred_label} | Prob: {target_image_pred_probs.max().cpu():.3f}"
+    plt.title(title)
+    plt.axis(False)
+    plt.show()
+
+custom_image_transform = transforms.Compose([
+    transforms.Resize((64, 64)),
+])
+
+#pred on out custom image
+pred_and_plot_image(model=model_0,
+                    image_path=custom_image_path,
+                    class_names=class_names,
+                    transform=custom_image_transform,
+                    device=device)
