@@ -151,14 +151,107 @@ torch.cuda.manual_seed(42)
 #
 # #setup training and save the results
 # if __name__ == '__main__':
-#     results = engine.train(model=model,
-#                            train_dataloader=train_dataloader,
-#                            test_dataloader=test_dataloader,
-#                            optimizer=optimizer,
-#                            loss_fn=loss_fn,
-#                            epochs=5,
-#                            device=device)
+results = engine.train(model=model,
+                       train_dataloader=train_dataloader,
+                       test_dataloader=test_dataloader,
+                       optimizer=optimizer,
+                       loss_fn=loss_fn,
+                       epochs=5,
+                       device=device)
+
+    # end_time = timer()
+    # print(f'Total training time {end_time-start_time:.3f} seconds')
+
+# 5. Evaluate model by plotting loss curves
+# from helper_functions import plot_loss_curves
 #
-#     end_time = timer()
-#     print(f'Total training time {end_time-start_time:.3f} seconds')
+# plot_loss_curves(results)
+# plt.show()
+
+# 6. Make predictions on images from the test set
+from typing import List, Tuple
+from PIL import Image
+
+# Take in a trained model, class names, image path, image size, a transform and target device
+def pred_and_plot_image(model: torch.nn.Module,
+                        image_path,
+                        class_names,
+                        image_size: Tuple[int, int] = (224, 224),
+                        transform: torchvision.transforms = None,
+                        device: torch.device = device):
+    #open image
+    img = Image.open(image_path)
+
+    # 3. Create transformation for image (if one doesn't exist)
+    if transform is not None:
+        image_transform = transform
+    else:
+        image_transform = transforms.Compose([
+            transforms.Resize(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
+        ])
+
+    #predict on image
+    model.to(device)
+
+    #turn on model eval mode and inference
+    model.eval()
+    with torch.inference_mode():
+        # Transform and add an extra dimension to image(model requires samples in [batch_size, color_channels, height, width])
+        transformed_image = image_transform(img).unsqueeze(dim=0)
+
+        # 7. Make a prediction on image with an extra dimension and send it to the target device
+        target_image_pred = model(transformed_image.to(device))
+
+    # Convert logits -> prediction probabilities(using torch.softmax() for multi - class classification)
+    target_image_pred_probs = torch.softmax(target_image_pred, dim=1)
+
+    # Convert prediction probabilities -> prediction labels
+    target_image_pred_label = torch.argmax(target_image_pred_probs, dim=1)
+
+    # Plot image with predicted label and probability
+    plt.figure()
+    plt.imshow(img)
+    plt.title(f'Pred {class_names[target_image_pred_label]}, Prob {target_image_pred_probs.max():.3f}')
+    plt.axis(False)
+    plt.show()
+
+# Get a random list of image paths from test set
+import random
+num_images_to_plot = 3
+test_image_path_list = list(Path(test_dir).glob('*/*.jpg'))  # get list all image paths from test data
+test_image_path_sample = random.sample(population=test_image_path_list, # go through all of the test image paths
+                                       k=num_images_to_plot)# randomly select 'k' image paths to pred and plot
+
+# Make predictions on and plot the images
+# for image_path in test_image_path_sample:
+#     pred_and_plot_image(model,
+#                         image_path=image_path,
+#                         class_names=class_names,
+#                         # transform=weights.transforms(), # optionally pass in a specified transform from our pretrained model weights
+#                         image_size=(224, 224))
+
+# 6.1 Making predictions on a custom image
+#download custom image
+import requests
+
+#setup custom image path
+custom_image_path = data_path / '04-pizza-dad.jpeg'
+# Download the image if it doesn't already exist
+# if not custom_image_path.is_file():
+#     with open(custom_image_path, 'wb') as f:
+#         request = requests.get('https://raw.githubusercontent.com/mrdbourke/pytorch-deep-learning/main/images/04-pizza-dad.jpeg')
+#         print(f'Downloading {custom_image_path}..')
+#         f.write(request.content)
+# else:
+#     print(f'{custom_image_path} already exist')
+
+#predict on custom image
+# pred_and_plot_image(model=model,
+#                     image_path=custom_image_path,
+#                     class_names=class_names)
+
+
+
 
