@@ -110,21 +110,21 @@ torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 
 # start the timer
-from timeit import default_timer as timer
-start_time = timer()
-
-# #setup training and save the results
-
-results = engine.train(model=model,
-                       train_dataloader=train_dataloader,
-                       test_dataloader=test_dataloader,
-                       optimizer=optimizer,
-                       loss_fn=loss_fn,
-                       epochs=5,
-                       device=device)
-
-end_time = timer()
-print(f'Total training time {end_time-start_time:.3f} seconds')
+# from timeit import default_timer as timer
+# start_time = timer()
+#
+# # #setup training and save the results
+#
+# results = engine.train(model=model,
+#                        train_dataloader=train_dataloader,
+#                        test_dataloader=test_dataloader,
+#                        optimizer=optimizer,
+#                        loss_fn=loss_fn,
+#                        epochs=5,
+#                        device=device)
+#
+# end_time = timer()
+# print(f'Total training time {end_time-start_time:.3f} seconds')
 
 #MAKE PREDICTIONS ON THE ENTIRE TEST DATASET WITH THE MODEL
 
@@ -268,6 +268,291 @@ import matplotlib.pyplot as plt
 #     plt.title(f'True {true_label} | Pred: {pred_class} | Prob {pred_prob:.3f}')
 #     plt.axis(False)
 #     plt.show()
+
+# Predict on your own image of pizza/steak/sushi - how does the model go? What happens if you predict on an image that isn't pizza/steak/sushi?
+#get an image of pizza/steak/sushi
+import subprocess, shutil
+
+url = 'https://images.unsplash.com/photo-1588315029754-2dd089d39a1a'
+output_path = 'photo-1588315029754-2dd089d39a1a'
+new_path = 'pizza.jpg'
+if os.path.isfile(new_path):
+    print('image already exist')
+else:
+    subprocess.run(['curl', '-o', output_path, url], check=True)
+    #copy and rename
+    shutil.copy(output_path, new_path)
+
+#make a func to pred and plot images
+from PIL import Image
+def pred_and_plot(image_path, model, transform, class_names, device=device):
+    #open image
+    image = Image.open(image_path)
+
+    #transform image
+    transformed_image = transform(image)
+
+    #pred on image
+    model.eval()
+    with torch.inference_mode():
+        pred_logit = model(transformed_image.unsqueeze(0).to(device))
+        pred_label = torch.argmax(torch.softmax(pred_logit, dim=1), dim=1)
+
+    #plot image and pred
+    plt.figure()
+    plt.imshow(image)
+    plt.title(f'Pred class {class_names[pred_label]}')
+    plt.axis(False)
+    plt.show()
+
+# pred_and_plot(image_path='pizza.jpg',
+#               model=model,
+#               transform=simple_transform,
+#               class_names=class_names
+#               )
+
+#try again on a photo of steak
+url2 = 'https://images.unsplash.com/photo-1546964124-0cce460f38ef'
+output_path2 = 'photo-1546964124-0cce460f38ef'
+new_path2 = 'steak.jpg'
+
+if os.path.isfile(new_path2):
+    print('image already exist')
+else:
+    subprocess.run(['curl', '-o', output_path2, url2], check=True)
+    #copy and rename
+    shutil.copy(output_path2, new_path2)
+
+# pred_and_plot(image_path='steak.jpg',
+#               model=model,
+#               transform=simple_transform,
+#               class_names=class_names
+#               )
+
+#get an image not pizza/sushi/steak
+url3 = 'https://images.unsplash.com/photo-1570913149827-d2ac84ab3f9a'
+output_path3 = 'photo-1570913149827-d2ac84ab3f9af'
+new_path3 = 'apple.jpg'
+
+if os.path.isfile(new_path3):
+    print('image already exist')
+else:
+    subprocess.run(['curl', '-o', output_path3, url3], check=True)
+    #copy and rename
+    shutil.copy(output_path3, new_path3)
+
+# pred_and_plot(image_path='apple.jpg',
+#               model=model,
+#               transform=simple_transform,
+#               class_names=class_names
+#               )
+
+# 4. Train the model from section 4 above for longer (10 epochs should do), what happens to the performance?
+#recreate a new model
+import torchvision
+from torch import nn
+
+model_1 = torchvision.models.efficientnet_b0(pretrained=True).to(device)
+
+#freeze the base layers
+for param in model_1.parameters():
+    param.requires_grad = False
+
+#change the classification head
+torch.manual_seed(42)
+model_1.classifier = nn.Sequential(
+    nn.Dropout(p=0.2, inplace=True),
+    nn.Linear(in_features=1280, out_features=len(class_names), bias=True)
+).to(device)
+
+#set the random seeds
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
+
+#start the timer
+from timeit import default_timer as timer
+start_time = timer()
+
+#create a loss and optimizer
+loss_fn = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model_1.parameters(), lr=0.001)
+
+#setup training and save results
+
+# model_1_results = engine.train(model=model_1,
+#                                train_dataloader=train_dataloader,
+#                                test_dataloader=test_dataloader,
+#                                optimizer=optimizer,
+#                                loss_fn=loss_fn,
+#                                epochs=10,
+#                                device=device)
+#
+# end_time = timer()
+# print(f'training time {end_time-start_time:.3f} seconds')
+
+# Epoch: 10 | train_loss: 0.5388 | train_acc: 0.8047 | test_loss: 0.5333 | test_acc: 0.9176
+
+# 5. Train the model from section 4 above with more data, say 20% of the images from Food101 of Pizza, Steak and Sushi images.
+# You can find the 20% Pizza, Steak, Sushi dataset on the course GitHub. It was created with the notebook extras/04_custom_data_creation.ipynb
+
+import os
+import zipfile
+from pathlib import Path
+import requests
+
+#setup path to data folder
+
+data_path = Path('data/')
+image_path = data_path / 'pizza_steak_sushi_20_percent'
+image_data_zip_path = 'pizza_steak_sushi_20_percent.zip'
+# If the image folder doesn't exist, download it and prepare it...
+
+if image_path.is_dir():
+    print(f'{image_path} is exist')
+else:
+    print(f'Did not find {image_path} directory, creating one...')
+    image_path.mkdir(parents=True, exist_ok=True)
+
+    #download
+    with open(data_path / image_data_zip_path, 'wb') as f:
+        request = requests.get('https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi_20_percent.zip')
+        print('Downloading...')
+        f.write(request.content)
+
+    #unzip
+    with zipfile.ZipFile(data_path / image_data_zip_path, 'r') as zip_ref:
+        print('Unzipping')
+        zip_ref.extractall(image_path)
+
+    #remove zipfile
+    os.remove(data_path / image_data_zip_path)
+
+
+#setup dirs
+train_dir_20_percent = image_path / 'train'
+test_dir_20_percent = image_path / 'test'
+
+# print(train_dir_20_percent, test_dir_20_percent)
+
+#prepare data
+
+# Create a transforms pipeline
+simple_transform = transforms.Compose([
+    transforms.Resize((224, 224)), # 1. Reshape all images to 224x224 (though some models may require different sizes)
+    transforms.ToTensor(), # 2. Turn image values to between 0 & 1
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], # 3. A mean of [0.485, 0.456, 0.406] (across each colour channel)
+                         std=[0.229, 0.224, 0.225]) # 4. A standard deviation of [0.229, 0.224, 0.225] (across each colour channel),
+])
+
+train_dataloader_20_percent, test_dataloader_20_percent, class_names = data_setup.create_dataloaders(train_dir=train_dir_20_percent,
+                                                                               test_dir=test_dir_20_percent,
+                                                                               transform=simple_transform,
+                                                                               batch_size=32)
+
+#create a new model for 20 percent of the data
+model_2 = torchvision.models.efficientnet_b0(pretrained=True).to(device)
+
+#freeze all the bays layers
+for param in model_2.features.parameters():
+    param.requires_grad = False
+
+#change the classifier head
+torch.manual_seed(42)
+model_2.classifier = nn.Sequential(
+    nn.Dropout(p=0.2),
+    nn.Linear(in_features=1280, out_features=3, bias=True)
+).to(device)
+
+#train a model with 20 % data
+
+#set the random seeds
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
+
+#start the timer
+from timeit import default_timer as timer
+# start_time = timer()
+
+#create a loss and optimizer
+loss_fn = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model_2.parameters(), lr=0.001)
+
+#setup training and save results
+
+# model_2_results = engine.train(model=model_2,
+#                                train_dataloader=train_dataloader_20_percent,
+#                                test_dataloader=test_dataloader_20_percent,
+#                                optimizer=optimizer,
+#                                loss_fn=loss_fn,
+#                                epochs=10,
+#                                device=device)
+#
+# end_time = timer()
+# print(f'training time {end_time-start_time:.3f} seconds')
+
+# With 10 percent and 5 epochs
+# Epoch: 5 | train_loss: 0.6309 | train_acc: 0.8867 | test_loss: 0.6012 | test_acc: 0.9072
+#
+# With 20 percent and 5 epochs
+# Epoch: 5 | train_loss: 0.4526 | train_acc: 0.8708 | test_loss: 0.3743 | test_acc: 0.9006
+
+# 6. Try a different model from torchvision.models on the Pizza, Steak, Sushi data, how does this model perform?
+# You'll have to change the size of the classifier layer to suit our problem.
+# You may want to try an EfficientNet with a higher number than our B0, perhaps torchvision.models.efficientnet_b2()?
+
+# Create a transform to transform the data
+from torchvision import transforms, models
+effnet_b2_transform = transforms.Compose([
+    transforms.Resize((288, 288)),# effnet_b2 takes images of size 288, 288
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+# Use 10% data sample for effnet_b2 to compare to model_0_results
+#import the data
+train_dataloader_effnet_b2, test_dataloader_effnet_b2, class_names = data_setup.create_dataloaders(train_dir=train_dir,
+                                                                                                   test_dir=test_dir,
+                                                                                                   transform=effnet_b2_transform,
+                                                                                                   batch_size=32)
+
+
+# Create a effnet_b2 new model
+model_3 = torchvision.models.efficientnet_b2(pretrained=True).to(device)
+
+#freeze the base layers
+for param in model_3.parameters():
+    param.requires_grad = False
+
+# Change the classifier head (to suit our problem)
+torch.manual_seed(42)
+model_3.classifier = nn.Sequential(
+    nn.Dropout(p=0.3, inplace=True),
+    nn.Linear(in_features=1408, out_features=len(class_names), bias=True)
+).to(device)
+
+loss_fn = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model_3.parameters(),lr=0.001)
+
+#set the random seed
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
+
+#start the timer
+start_time = timer()
+
+#setup training and save results
+model_3_results = engine.train(model=model_3,
+                               train_dataloader=train_dataloader_effnet_b2,
+                               test_dataloader=test_dataloader_effnet_b2,
+                               optimizer=optimizer,
+                               loss_fn=loss_fn,
+                               epochs=5,
+                               device=device)
+
+end_time = timer()
+print(f'Total training time {end_time-start_time:.3f} seconds')
+
+
 
 
 
