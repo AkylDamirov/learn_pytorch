@@ -127,10 +127,10 @@ img_size = 224
 patch_size=16
 num_patches = img_size/patch_size
 assert img_size % patch_size == 0, 'Image size must be divisible by patch size'
-print(f"Number of patches per row: {num_patches}\
-        \nNumber of patches per column: {num_patches}\
-        \nTotal patches: {num_patches*num_patches}\
-        \nPatch size: {patch_size} pixels x {patch_size} pixels")
+# print(f"Number of patches per row: {num_patches}\
+#         \nNumber of patches per column: {num_patches}\
+#         \nTotal patches: {num_patches*num_patches}\
+#         \nPatch size: {patch_size} pixels x {patch_size} pixels")
 
 #create a series of subplots
 # fig, axs = plt.subplots(nrows=img_size//patch_size,# need int not float
@@ -276,14 +276,26 @@ class PatchEmbedding(nn.Module):
 set_seeds()
 
 #create an instance of patch embedding layer
-patchify = PatchEmbedding(in_channels=3,
-                          patch_size=16,
-                          embedding_dim=768)
+# patchify = PatchEmbedding(in_channels=3,
+#                           patch_size=16,
+#                           embedding_dim=768)
 
 #pass the single image through
 # print(f'Input image shape {image.unsqueeze(0).shape}')
-patch_embedded_image = patchify(image.unsqueeze(0))# add an extra batch dimension on the 0th index, otherwise will error
+# patch_embedded_image = patchify(image.unsqueeze(0))# add an extra batch dimension on the 0th index, otherwise will error
+
 # print(f'output patch embedding shape {patch_embedded_image.shape}')
+
+# Let's now get a summary of our PatchEmbedding layer.
+random_input_image = (1, 3, 224, 224)
+random_input_image_error = (1, 3, 250, 250) # will error because image size is incompatible with patch_size
+
+# # Get a summary of the input and outputs of PatchEmbedding
+# summary(PatchEmbedding(),
+#         input_size=random_input_image,
+#         col_names=['input_size', 'output_size', 'num_params', 'trainable'],
+#         col_width=20,
+#         row_settings=['var_names'])
 
 
 
