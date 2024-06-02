@@ -383,6 +383,132 @@ patch_and_position_embedding = patch_embedding_class_token + position_embedding
 # print(f'Patch and position embedding shape:{patch_and_position_embedding.shape}')
 
 # 5. Equation 2: Multi-Head Attention (MSA)
+# 5.3 Replicating Equation 2 with PyTorch layers
+class MultiheadSelfAttentionBlock(nn.Module):
+    #initialize a multi-head self-attention block ("MSA block")
+    def __init__(self,
+                 embedding_dim: int=768, #Hidden size D from the table 1 for Vit base
+                 num_heads: int=12,#heads from table 1 from ViT base
+                 attn_dropout:float=0):# does not look like the papaer uses any dropout in MSAblock
+        super().__init__()
+
+        #create Norm layer (LN)
+        self.layer_norm = nn.LayerNorm(normalized_shape=embedding_dim)
+
+        #create multi-head attention (MSA) layer
+        self.multihead_attn = nn.MultiheadAttention(embed_dim=embedding_dim,
+                                                    num_heads=num_heads,
+                                                    dropout=attn_dropout,
+                                                    batch_first=True) #does out batch dimension come first?
+
+    def forward(self, x):
+        x = self.layer_norm(x)
+        attn_output, _ = self.multihead_attn(query=x, #query embeddings
+                                             key=x,#key embeddings
+                                             value=x,#value embeddings
+                                             need_weights=False) #do we need the weights or just the layer outputs?
+        return attn_output
+
+#create an instance of MSABlock
+multihead_self_attention_block = MultiheadSelfAttentionBlock(embedding_dim=768,#from table 1
+                                                             num_heads=12)#from table 1
+
+#pass patch and position image embedding through MSABlock
+patched_image_through_msa_block = multihead_self_attention_block(patch_and_position_embedding)
+# print(f'Input shape of MSA block: {patch_and_position_embedding.shape}')
+# print(f'Output shape of MSA block {patched_image_through_msa_block.shape}')
+
+# 6.2 Replicating Equation 3 with PyTorch layers
+class MLPBlock(nn.Module):
+    #initialize the class with hyperparameters from table 1 and table 3
+    def __init__(self,
+                 embedding_dim: int=768, # Hidden Size D from Table 1 for ViT-Base
+                 mlp_size: int=3072, # MLP size from Table 1 for ViT-Base
+                 dropout:float=0.1): # Dropout from Table 3 for ViT-Base
+        super().__init__()
+
+        #create norm layer
+        self.layer_norm = nn.LayerNorm(normalized_shape=embedding_dim)
+
+        #create multilayer perceptron (MLP) layer(s)
+        self.mlp = nn.Sequential(
+            nn.Linear(in_features=embedding_dim, out_features=mlp_size),
+            nn.GELU(), # "The MLP contains two layers with a GELU non-linearity
+            nn.Dropout(p=dropout),
+            nn.Linear(in_features=mlp_size, out_features=embedding_dim),# take back to embedding_dim
+            nn.Dropout(p=dropout)# "Dropout, when used, is applied after every dense layer.."
+        )
+
+    def forward(self, x):
+        x = self.layer_norm(x)
+        x = self.mlp(x)
+        return x
+
+mlp_block = MLPBlock(embedding_dim=768, #from tabel 1
+                     mlp_size=3072, #from table 1
+                     dropout=0.1) #from table 3
+
+#pass output of MSABlock through MLPBlock
+patched_image_through_mlp_block = mlp_block(patched_image_through_msa_block)
+# print(f'Input shape of MLP block {patched_image_through_msa_block.shape}')
+# print(f'output shape of MLP block {patched_image_through_mlp_block.shape}')
+
+
+# 7. Create the Transformer Encoder
+# 7.1 Creating a Transformer Encoder by combining our custom made layers
+class TransformerEncoderBlock(nn.Module):
+    def __init__(self,
+                 embedding_dim: int=768, #hidden size D from the table 1 and tabel 3
+                 num_heads: int=12, #heads from tabel 1 for VIT base
+                 mlp_size: int=3072, #MLP size from table 1 for VIT base
+                 mlp_dropout: float=0.1, #amount for dropout for dense layer from table 3 for VIT base
+                 attn_dropout: float=0): #amount for dropout for attention layers
+        super().__init__()
+
+        #create MSA block (equation 2)
+        self.msa_block = MultiheadSelfAttentionBlock(embedding_dim=embedding_dim,
+                                                     num_heads=num_heads,
+                                                     attn_dropout=attn_dropout)
+
+        #create MLP block (equation 3)
+        self.mlp_block = MLPBlock(embedding_dim=embedding_dim,
+                                  mlp_size=mlp_size,
+                                  dropout=mlp_dropout)
+
+    def forward(self, x):
+        #create residual connection for MSA block (add the input to the output)
+        x = self.msa_block(x)+x
+
+        #create residual connection for MLP block (add the input to the output)
+        x = self.mlp_block(x)+x
+
+        return x
+
+#cretae an instance of TransformerEncoderBlock
+transformer_encoder_block = TransformerEncoderBlock()
+
+# summary(model=transformer_encoder_block,
+#         input_size=(1, 197, 768),
+#         col_names=['input_size', 'output_size', 'num_params', 'trainable'],
+#         col_width=20,
+#         row_settings=['var_names'])
+
+# 7.2 Creating a Transformer Encoder with PyTorch's Transformer layers
+# Create the same as above with torch.nn.TransformerEncoderLayer()
+torch_transformer_encoder_layer = nn.TransformerEncoderLayer(d_model=768, # Hidden size D from Table 1 for ViT-Base
+                                                             nhead=12, # Heads from Table 1 for ViT-Base
+                                                             dim_feedforward=3072,# MLP size from Table 1 for ViT-Base
+                                                             dropout=0.1,# Amount of dropout for dense layers from Table 3 for ViT-Base
+                                                             activation='gelu', # GELU non-linear activation
+                                                             batch_first=True,# Do our batches come first?
+                                                             norm_first=True # Normalize first or after MSA/MLP layers?
+                                                             )
+
+# print(torch_transformer_encoder_layer)
+
+
+
+
 
 
 
