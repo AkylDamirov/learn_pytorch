@@ -105,11 +105,13 @@ transformer_encoder_layer = nn.TransformerEncoderLayer(d_model=768,
                                                        norm_first=True)
 
 
+
 #Stack transformer encoder layers on top of each other to make full transformer encoder
 transformer_encoder = nn.TransformerEncoder(
     encoder_layer=transformer_encoder_layer,
     num_layers=12
 )
+
 
 print(transformer_encoder)
 # summary(model=transformer_encoder,
