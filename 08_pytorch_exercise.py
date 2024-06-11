@@ -353,4 +353,220 @@ class ViT(nn.Module):
 # with open(file_path, 'w') as file:
 #     file.write(vit_model_code)
 
+from vit import ViT
+
+# imported_vit = ViT()
+# summary(model=imported_vit,
+#         input_size=(1, 3, 224, 224))
+#
+
+#3. Train a pretrained ViT feature extractor model (like the one we made in 08. PyTorch Paper Replicating section 10) on 20% of the pizza, steak and sushi data like the dataset we used in 07. PyTorch Experiment Tracking section 7.3.
+# See how it performs compared to te EffNetB2 model we compared it to in 08. PyTorch Paper Replicating section 10.6.
+set_seeds()
+
+#create ViT feature extractor model
+import torchvision
+
+#download pretrained ViT weights and model
+vit_weights = torchvision.models.ViT_B_16_Weights.DEFAULT #DEFAULT means best available
+pretrained_vit = torchvision.models.vit_b_16(weights=vit_weights)
+
+#freeze all layers in pretrained ViT model
+for param in pretrained_vit.parameters():
+    param.requires_grad = False
+
+#update the pretrained ViT head
+embedding_dim = 768 #ViT base
+set_seeds()
+pretrained_vit.heads = nn.Sequential(
+    nn.LayerNorm(normalized_shape=embedding_dim),
+    nn.Linear(in_features=embedding_dim,
+              out_features=len(class_names))
+)
+
+#print summary
+# summary(model=pretrained_vit,
+#         input_size=(1, 3, 224, 224), # (batch_size, color_channels, height, width)
+#         col_names=['input_size', 'output_size', 'num_params', 'trainable'],
+#         col_width=20,
+#         row_settings=['var_names'])
+
+#get 20% of the data
+data_20_percent_path = download_data(source='https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi_20_percent.zip',
+                                     destination='pizza_steak_sushi_20_percent')
+
+#setup train and test directories
+train_dir_20_percent = data_20_percent_path / 'train'
+#we dont need test 20%, 10% is enough
+
+#preprocess the data
+vit_transforms = vit_weights.transforms()
+train_dataloader_20_percent, test_dataloader, class_names = data_setup.create_dataloaders(train_dir=train_dir_20_percent,
+                                                                                          test_dir=test_dir,
+                                                                                          transform=vit_transforms,
+                                                                                          batch_size=32)
+
+# print(len(train_dataloader), len(train_dataloader_20_percent), len(test_dataloader))
+
+#train a pretrained ViT feature extractor
+from going_modular import engine
+
+optimizer = torch.optim.Adam(params=pretrained_vit.parameters(),
+                             lr=1e-3)
+
+loss_fn = torch.nn.CrossEntropyLoss()
+
+set_seeds()
+# pretrained_vit_results = engine.train(model=pretrained_vit,
+#                                       train_dataloader=train_dataloader_20_percent,
+#                                       test_dataloader=test_dataloader,
+#                                       optimizer=optimizer,
+#                                       loss_fn=loss_fn,
+#                                       epochs=10,
+#                                       device=device)
+
+# 4. Try repeating the steps from excercise 3 but this time use the
+# "ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1" pretrained weights from torchvision.models.vit_b_16()
+
+# create ViT feature extractor model
+import torchvision
+
+#download pretrained ViT weights and model
+vit_weights_swag = torchvision.models.ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1 #get swag weights
+pretrained_vit_swag = torchvision.models.vit_b_16(weights=vit_weights_swag)
+
+#freeze all layers in pretrained ViT model
+for param in pretrained_vit_swag.parameters():
+    param.requires_grad = False
+
+#update the pretrained ViT head
+embedding_dim = 768
+set_seeds()
+pretrained_vit_swag.heads = nn.Sequential(
+    nn.LayerNorm(normalized_shape=embedding_dim),
+    nn.Linear(in_features=embedding_dim,
+              out_features=len(class_names))
+)
+
+#check out transforms for pretrained ViT with Swag weights
+vit_transforms_swag = vit_weights_swag.transforms()
+
+# Get 20% of the data
+data_20_percent_path = download_data(source="https://github.com/mrdbourke/pytorch-deep-learning/raw/main/data/pizza_steak_sushi_20_percent.zip",
+                                     destination="pizza_steak_sushi_20_percent")
+
+# Setup train and test directories
+train_dir_20_percent = data_20_percent_path / "train"
+# test_dir_20_percent = data_20_percent_path / "test" # don't need 20% test data as the model in 07. PyTorch Experiment Tracking section 7.3 tests on the 10% dataset not the 20%
+
+# Preprocess the data
+train_dataloader_20_percent, test_dataloader, class_names = data_setup.create_dataloaders(train_dir=train_dir_20_percent,
+                                                                                          test_dir=test_dir, # use 10% data for testing
+                                                                                          transform=vit_transforms_swag,
+                                                                                          batch_size=32)
+
+#train pretrained ViT feature extractor with Swag weights
+
+from going_modular import engine
+
+optimizer = torch.optim.Adam(params=pretrained_vit_swag.parameters(),
+                             lr=1e-3)
+
+loss_fn = torch.nn.CrossEntropyLoss()
+
+set_seeds()
+# pretrained_vit_swag_results = engine.train(model=pretrained_vit_swag,
+#                                            train_dataloader=train_dataloader_20_percent,
+#                                            test_dataloader=test_dataloader,
+#                                            optimizer=optimizer,
+#                                            loss_fn=loss_fn,
+#                                            epochs=10,
+#                                            device=device)
+
+
+#Bonus: get the most wrong examples from test dataset
+
+#get all test data paths
+from tqdm import tqdm
+from pathlib import Path
+test_data_paths = list(Path(test_dir).glob("*/*.jpg"))
+test_labels = [path.parent.stem for path in test_data_paths]
+
+
+# Create a function to return a list of dictionaries with sample, label, prediction, pred prob
+def pred_and_store(test_paths, model, transform, class_names, device):
+    test_pred_list = []
+    for path in tqdm(test_paths):
+        # Create empty dict to store info for each sample
+        pred_dict = {}
+
+        # Get sample path
+        pred_dict["image_path"] = path
+
+        # Get class name
+        class_name = path.parent.stem
+        pred_dict["class_name"] = class_name
+
+        # Get prediction and prediction probability
+        from PIL import Image
+        img = Image.open(path)  # open image
+        transformed_image = transform(img).unsqueeze(0)  # transform image and add batch dimension
+        model.eval()
+        with torch.inference_mode():
+            pred_logit = model(transformed_image.to(device))
+            pred_prob = torch.softmax(pred_logit, dim=1)
+            pred_label = torch.argmax(pred_prob, dim=1)
+            pred_class = class_names[pred_label.cpu()]
+
+            # Make sure things in the dictionary are back on the CPU
+            pred_dict["pred_prob"] = pred_prob.unsqueeze(0).max().cpu().item()
+            pred_dict["pred_class"] = pred_class
+
+        # Does the pred match the true label?
+        pred_dict["correct"] = class_name == pred_class
+
+        # print(pred_dict)
+        # Add the dictionary to the list of preds
+        test_pred_list.append(pred_dict)
+
+    return test_pred_list
+
+
+test_pred_dicts = pred_and_store(test_paths=test_data_paths,
+                                 model=pretrained_vit_swag,
+                                 transform=vit_transforms_swag,
+                                 class_names=class_names,
+                                 device=device)
+
+# print(test_pred_dicts[:5])
+
+#turn the test_pred dicts into Dataframe
+import pandas as pd
+test_pred_df = pd.DataFrame(test_pred_dicts)
+# Sort DataFrame by correct then by pred_prob
+top_5_most_wrong = test_pred_df.sort_values(by=["correct", "pred_prob"], ascending=[True, False]).head()
+print(top_5_most_wrong)
+
+#how many samples from the test dataset did our model get correct?
+print(test_pred_df.correct.value_counts())
+
+import torchvision
+import matplotlib.pyplot as plt
+
+# Plot the top 5 most wrong images
+# for row in top_5_most_wrong.iterrows():
+#     row = row[1]
+#     image_path = row[0]
+#     true_label = row[1]
+#     pred_prob = row[2]
+#     pred_class = row[3]
+#     # Plot the image and various details
+#     img = torchvision.io.read_image(str(image_path))  # get image as tensor
+#     plt.figure()
+#     plt.imshow(img.permute(1, 2, 0))  # matplotlib likes images in [height, width, color_channels]
+#     plt.title(f"True: {true_label} | Pred: {pred_class} | Prob: {pred_prob:.3f}")
+#     plt.axis(False);
+#     plt.show()
+
+
 
