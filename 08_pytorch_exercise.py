@@ -532,23 +532,23 @@ def pred_and_store(test_paths, model, transform, class_names, device):
     return test_pred_list
 
 
-test_pred_dicts = pred_and_store(test_paths=test_data_paths,
-                                 model=pretrained_vit_swag,
-                                 transform=vit_transforms_swag,
-                                 class_names=class_names,
-                                 device=device)
+# test_pred_dicts = pred_and_store(test_paths=test_data_paths,
+#                                  model=pretrained_vit_swag,
+#                                  transform=vit_transforms_swag,
+#                                  class_names=class_names,
+#                                  device=device)
 
 # print(test_pred_dicts[:5])
 
 #turn the test_pred dicts into Dataframe
 import pandas as pd
-test_pred_df = pd.DataFrame(test_pred_dicts)
+# test_pred_df = pd.DataFrame(test_pred_dicts)
 # Sort DataFrame by correct then by pred_prob
-top_5_most_wrong = test_pred_df.sort_values(by=["correct", "pred_prob"], ascending=[True, False]).head()
-print(top_5_most_wrong)
-
-#how many samples from the test dataset did our model get correct?
-print(test_pred_df.correct.value_counts())
+# top_5_most_wrong = test_pred_df.sort_values(by=["correct", "pred_prob"], ascending=[True, False]).head()
+# print(top_5_most_wrong)
+#
+# #how many samples from the test dataset did our model get correct?
+# print(test_pred_df.correct.value_counts())
 
 import torchvision
 import matplotlib.pyplot as plt
@@ -560,6 +560,7 @@ import matplotlib.pyplot as plt
 #     true_label = row[1]
 #     pred_prob = row[2]
 #     pred_class = row[3]
+
 #     # Plot the image and various details
 #     img = torchvision.io.read_image(str(image_path))  # get image as tensor
 #     plt.figure()
