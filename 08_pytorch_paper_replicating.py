@@ -733,6 +733,6 @@ else:
     print(f'{custom_image_path} already exist')
 
 #predict on custom image
-pred_and_plot_image(model=pretrained_vit,
-                    image_path=custom_image_path,
-                    class_names=class_names)
+# pred_and_plot_image(model=pretrained_vit,
+#                     image_path=custom_image_path,
+#                     class_names=class_names)
