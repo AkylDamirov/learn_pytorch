@@ -127,7 +127,7 @@ optimizer = torch.optim.Adam(params=effnetb2.parameters(), lr=1e-3)
 loss_fn = torch.nn.CrossEntropyLoss()
 
 # Set seeds for reproducibility and train the model
-set_seeds()
+# set_seeds()
 # effnetb2_results = engine.train(model=effnetb2,
 #                                 train_dataloader=train_dataloader_effnetb2,
 #                                 test_dataloader=test_dataloader_effnetb2,
@@ -213,14 +213,14 @@ optimizer = torch.optim.Adam(params=vit.parameters())
 loss_fn = torch.nn.CrossEntropyLoss()
 
 # Train ViT model with seeds set for reproducibility
-# set_seeds()
-# vit_results = engine.train(model=vit,
-#                            train_dataloader=train_dataloader_vit,
-#                            test_dataloader=test_dataloader_vit,
-#                            epochs=10,
-#                            optimizer=optimizer,
-#                            loss_fn=loss_fn,
-#                            device=device)
+set_seeds()
+vit_results = engine.train(model=vit,
+                           train_dataloader=train_dataloader_vit,
+                           test_dataloader=test_dataloader_vit,
+                           epochs=10,
+                           optimizer=optimizer,
+                           loss_fn=loss_fn,
+                           device=device)
 
 
 # 4.3 Inspecting ViT loss curves
@@ -228,14 +228,146 @@ loss_fn = torch.nn.CrossEntropyLoss()
 
 
 # 4.4 Saving ViT feature extractor
-utils.save_model(model=vit,
-                 target_dir='models',
-                 model_name='09_pretrained_vit_feature_extractor_pizza_steak_sushi_20_percent.pth')
+# utils.save_model(model=vit,
+#                  target_dir='models',
+#                  model_name='09_pretrained_vit_feature_extractor_pizza_steak_sushi_20_percent.pth')
 
 
+# 4.5 Checking the size of ViT feature extractor
+# Get the model size in bytes then convert to megabytes
+pretrained_vit_model_size = Path('models/09_pretrained_vit_feature_extractor_pizza_steak_sushi_20_percent.pth').stat().st_size // (1024*1024)
+# print(f"Pretrained ViT feature extractor model size: {pretrained_vit_model_size} MB")
 
 
+# 4.6 Collecting ViT feature extractor stats
+# Count number of parameters in ViT
+vit_total_params = sum(torch.numel(param) for param in vit.parameters())
+# print(vit_total_params)
+
+# Create ViT statistics dictionary
+vit_stats = {'test_loss':vit_results['test_loss'][-1],
+             'test_acc':vit_results['test_acc'][-1],
+             'number_of_parameters': vit_total_params,
+             'model size MB': pretrained_vit_model_size}
 
 
+# 5. Making predictions with our trained models and timing them
+#get all test data paths
+# print(f"[INFO] Finding all filepaths ending with '.jpg' in directory: {test_dir}")
+test_data_paths = list(Path(test_dir).glob("*/*.jpg"))
+# print(test_data_paths)
 
 
+# 5.1 Creating a function to make predictions across the test dataset
+import pathlib
+from PIL import Image
+from timeit import default_timer as timer
+from tqdm.auto import tqdm
+from typing import List, Dict
+
+# 1. Create a function to return a list of dictionaries with sample, truth label, prediction, prediction probability and prediction time
+def pred_and_store(paths: List[pathlib.Path],
+                   model: torch.nn.Module,
+                   transform: torchvision.transforms,
+                   class_names: List[str],
+                   device: str = 'cuda' if torch.cuda.is_available() else 'cpu'):
+    # 2. Create an empty list to store prediction dictionaires
+    pred_list = []
+
+    # 3. Loop through target paths
+    for path in tqdm(paths):
+        # 4. Create empty dictionary to store prediction information for each sample
+        pred_dict = {}
+
+        # 5. Get the sample path and ground truth class name
+        pred_dict['image_path'] = path
+        class_name = path.parent.stem
+        pred_dict['class_name'] = class_name
+
+        # 6. Start the prediction timer
+        start_time = timer()
+
+        # 7. Open image path
+        img = Image.open(path)
+
+        # 8. Transform the image, add batch dimension and put image on target device
+        transformed_image = transform(img).unsqueeze(0).to(device)
+
+        # 9. Prepare model for inference by sending it to target device and turning on eval() mode
+        model.to(device)
+        model.eval()
+
+        # 10. Get prediction probability, predicition label and prediction class
+        with torch.inference_mode():
+            pred_logit = model(transformed_image) # perform inference on target sample
+            pred_prob = torch.softmax(pred_logit, dim=1) # turn logits into prediction probabilities
+            pred_label = torch.argmax(pred_prob, dim=1) # turn prediction probabilities into prediction label
+            pred_class = class_names[pred_label.cpu()] # hardcode prediction class to be on CPU
+
+            # 11. Make sure things in the dictionary are on CPU (required for inspecting predictions later on)
+            pred_dict['pred_prob'] = round(pred_prob.unsqueeze(0).max().cpu().item(), 4)
+            pred_dict['pred_class'] = pred_class
+
+            #12 end the timer and calculate time per pred
+            end_time = timer()
+            pred_dict['time_for_pred'] = round(end_time-start_time, 4)
+
+        # 13. Does the pred match the true label?
+        pred_dict['correct'] = class_name == pred_class
+
+        # 14. Add the dictionary to the list of preds
+        pred_list.append(pred_dict)
+
+    # 15. Return list of prediction dictionaries
+    return pred_list
+
+# 5.2 Making and timing predictions with EffNetB2
+# Make predictions across test dataset with EffNetB2
+# effnetb2_test_pred_dicts = pred_and_store(paths=test_data_paths,
+#                                           model=effnetb2,
+#                                           transform=effnetb2_transforms,
+#                                           class_names=class_names,
+#                                           device='cpu')
+# print(effnetb2_test_pred_dicts[:2])
+
+# Turn the test_pred_dicts into a DataFrame
+import pandas as pd
+
+# effnetb2_test_pred_df = pd.DataFrame(effnetb2_test_pred_dicts)
+# effnetb2_test_pred_df.head()
+
+# Check number of correct predictions
+# print(effnetb2_test_pred_df.correct.value_counts())
+
+# Find the average time per prediction
+# effnetb2_average_time_per_pred = round(effnetb2_test_pred_df.time_for_pred.mean(), 4)
+# print(f"EffNetB2 average time per prediction: {effnetb2_average_time_per_pred} seconds")
+
+# Add EffNetB2 average prediction time to stats dictionary
+# effnetb2_stats['time_per_pred_cpu'] = effnetb2_average_time_per_pred
+
+# 5.3 Making and timing predictions with ViT
+# Make list of prediction dictionaries with ViT feature extractor model on test images
+vit_test_pred_dicts = pred_and_store(paths=test_data_paths,
+                                     model=vit,
+                                     transform=vit_transforms,
+                                     class_names=class_names,
+                                     device='cpu')
+
+# Check the first couple of ViT predictions on the test dataset
+print(vit_test_pred_dicts[:2])
+
+# Turn vit_test_pred_dicts into a DataFrame
+vit_test_pred_df = pd.DataFrame(vit_test_pred_dicts)
+vit_test_pred_df.head()
+
+# Count the number of correct predictions
+print(vit_test_pred_df.correct.value_counts())
+
+# Calculate average time per prediction for ViT model
+vit_average_time_per_pred = round(vit_test_pred_df.time_for_pred.mean(), 4)
+print(f"ViT average time per prediction: {vit_average_time_per_pred} seconds")
+
+# Add average prediction time for ViT model on CPU
+vit_stats['time_per_pred_cpu'] = vit_average_time_per_pred
+print(vit_stats)
