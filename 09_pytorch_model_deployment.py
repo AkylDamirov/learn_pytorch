@@ -114,7 +114,7 @@ from torchinfo import summary
 
 # 3.2 Creating DataLoaders for EffNetB2
 #set up dataloaders
-train_dataloader_effnetb2, test_dataloader_effnetb2, class_name = data_setup.create_dataloaders(train_dir=train_dir,
+train_dataloader_effnetb2, test_dataloader_effnetb2, class_names = data_setup.create_dataloaders(train_dir=train_dir,
                                                                                                 test_dir=test_dir,
                                                                                                 transform=effnetb2_transforms,
                                                                                                 batch_size=32)
@@ -127,14 +127,14 @@ optimizer = torch.optim.Adam(params=effnetb2.parameters(), lr=1e-3)
 loss_fn = torch.nn.CrossEntropyLoss()
 
 # Set seeds for reproducibility and train the model
-# set_seeds()
-# effnetb2_results = engine.train(model=effnetb2,
-#                                 train_dataloader=train_dataloader_effnetb2,
-#                                 test_dataloader=test_dataloader_effnetb2,
-#                                 epochs=10,
-#                                 optimizer=optimizer,
-#                                 loss_fn=loss_fn,
-#                                 device=device)
+set_seeds()
+effnetb2_results = engine.train(model=effnetb2,
+                                train_dataloader=train_dataloader_effnetb2,
+                                test_dataloader=test_dataloader_effnetb2,
+                                epochs=10,
+                                optimizer=optimizer,
+                                loss_fn=loss_fn,
+                                device=device)
 
 
 
@@ -165,11 +165,11 @@ effnetb2_total_params = sum(torch.numel(param) for param in effnetb2.parameters(
 # print(effnetb2_total_params)
 
 #create dictionary with effnetb2 statistics
-# effnetb2_stats = {'test_loss':effnetb2_results['test_loss'][-1],
-#                   'test_acc':effnetb2_results['test_acc'][-1],
-#                   'number_of_parameters':effnetb2_total_params,
-#                   'model size (MB)':pretrained_effnetb2_model_size
-#                   }
+effnetb2_stats = {'test_loss':effnetb2_results['test_loss'][-1],
+                  'test_acc':effnetb2_results['test_acc'][-1],
+                  'number_of_parameters':effnetb2_total_params,
+                  'model size (MB)':pretrained_effnetb2_model_size
+                  }
 
 # 4. Creating a ViT feature extractor
 def create_vit_model(num_classes:3, seed=42):
@@ -207,7 +207,7 @@ train_dataloader_vit, test_dataloader_vit, class_names = data_setup.create_datal
 
 # 4.2 Training ViT feature extractor
 #setup optimizer
-optimizer = torch.optim.Adam(params=vit.parameters())
+optimizer = torch.optim.Adam(params=vit.parameters(), lr=1e-3)
 
 #setup loss
 loss_fn = torch.nn.CrossEntropyLoss()
@@ -248,7 +248,7 @@ vit_total_params = sum(torch.numel(param) for param in vit.parameters())
 vit_stats = {'test_loss':vit_results['test_loss'][-1],
              'test_acc':vit_results['test_acc'][-1],
              'number_of_parameters': vit_total_params,
-             'model size MB': pretrained_vit_model_size}
+             'model size (MB)': pretrained_vit_model_size}
 
 
 # 5. Making predictions with our trained models and timing them
@@ -323,28 +323,28 @@ def pred_and_store(paths: List[pathlib.Path],
 
 # 5.2 Making and timing predictions with EffNetB2
 # Make predictions across test dataset with EffNetB2
-# effnetb2_test_pred_dicts = pred_and_store(paths=test_data_paths,
-#                                           model=effnetb2,
-#                                           transform=effnetb2_transforms,
-#                                           class_names=class_names,
-#                                           device='cpu')
+effnetb2_test_pred_dicts = pred_and_store(paths=test_data_paths,
+                                          model=effnetb2,
+                                          transform=effnetb2_transforms,
+                                          class_names=class_names,
+                                          device='cpu')
 # print(effnetb2_test_pred_dicts[:2])
 
 # Turn the test_pred_dicts into a DataFrame
 import pandas as pd
 
-# effnetb2_test_pred_df = pd.DataFrame(effnetb2_test_pred_dicts)
-# effnetb2_test_pred_df.head()
+effnetb2_test_pred_df = pd.DataFrame(effnetb2_test_pred_dicts)
+effnetb2_test_pred_df.head()
 
 # Check number of correct predictions
 # print(effnetb2_test_pred_df.correct.value_counts())
 
 # Find the average time per prediction
-# effnetb2_average_time_per_pred = round(effnetb2_test_pred_df.time_for_pred.mean(), 4)
+effnetb2_average_time_per_pred = round(effnetb2_test_pred_df.time_for_pred.mean(), 4)
 # print(f"EffNetB2 average time per prediction: {effnetb2_average_time_per_pred} seconds")
 
 # Add EffNetB2 average prediction time to stats dictionary
-# effnetb2_stats['time_per_pred_cpu'] = effnetb2_average_time_per_pred
+effnetb2_stats['time_per_pred_cpu'] = effnetb2_average_time_per_pred
 
 # 5.3 Making and timing predictions with ViT
 # Make list of prediction dictionaries with ViT feature extractor model on test images
@@ -355,14 +355,14 @@ vit_test_pred_dicts = pred_and_store(paths=test_data_paths,
                                      device='cpu')
 
 # Check the first couple of ViT predictions on the test dataset
-print(vit_test_pred_dicts[:2])
+# print(vit_test_pred_dicts[:2])
 
 # Turn vit_test_pred_dicts into a DataFrame
 vit_test_pred_df = pd.DataFrame(vit_test_pred_dicts)
 vit_test_pred_df.head()
 
 # Count the number of correct predictions
-print(vit_test_pred_df.correct.value_counts())
+# print(vit_test_pred_df.correct.value_counts())
 
 # Calculate average time per prediction for ViT model
 vit_average_time_per_pred = round(vit_test_pred_df.time_for_pred.mean(), 4)
@@ -371,3 +371,88 @@ print(f"ViT average time per prediction: {vit_average_time_per_pred} seconds")
 # Add average prediction time for ViT model on CPU
 vit_stats['time_per_pred_cpu'] = vit_average_time_per_pred
 print(vit_stats)
+
+# 6. Comparing model results, prediction times and size
+# Turn stat dictionaries into DataFrame
+df = pd.DataFrame([effnetb2_stats, vit_stats])
+
+#add column for model names
+df['model'] = ['EffNetB2', 'ViT']
+
+# Convert accuracy to percentages
+df['test_acc'] = round(df['test_acc']*100, 2)
+
+nan_columns = df.columns[df.isna().any()].tolist()
+print(f'Columns containing Nan values {nan_columns}')
+
+df = df[~df['model size (MB)'].isnull()]
+df[['model size (MB)']] = df[['model size (MB)']].astype(int)
+
+nan_columns = df.columns[df.isna().any()].tolist()
+if nan_columns:
+    print(f'After Columns containing Nan values {nan_columns}')
+else:
+    print('no Nan values')
+# import numpy as np
+# for stats in [effnetb2_stats, vit_stats]:
+#     for key, value in stats.items():
+#         if np.isnan(value) or np.isinf(value):
+#             stats[key] = 0
+
+# df['time_per_pred_cpu'] = pd.to_numeric(df['time_per_pred_cpu'], errors='coerce')
+# df = df.dropna(subset=['time_per_pred_cpu'])
+# df[['time_per_pred_cpu']] = df['time_per_pred_cpu'].astype(int)
+
+# Compare ViT to EffNetB2 across different characteristics
+pd.DataFrame(data=(df.set_index("model").loc["ViT"] / df.set_index("model").loc["EffNetB2"]), # divide ViT statistics by EffNetB2 statistics
+             columns=["ViT to EffNetB2 ratios"]).T
+
+
+# 6.1 Visualizing the speed vs. performance tradeoff
+# 1. Create a plot from model comparison DataFrame
+fig, ax = plt.subplots(figsize=(12, 8))
+scatter = ax.scatter(data=df,
+                     x='time_per_pred_cpu',
+                     y='test_acc',
+                     c=['blue', 'orange'], #colours to use,
+                     s='model size (MB)'
+                     )
+
+# 2. Add titles, labels and customize fontsize for aesthetics
+ax.set_title('FoodFishion Mini Inference speed vs Perfomance', fontsize=18)
+ax.set_xlabel('Prediction time per image (seconds)', fontsize=14)
+ax.set_ylabel('test accuracy (%)', fontsize=14)
+ax.tick_params(axis='both', labelsize=12)
+ax.grid(True)
+
+# 3. Annotate with model names
+for index, row in df.iterrows():
+    ax.annotate(text=row['model'],
+                xy=(row['time_per_pred_cpu']+0.0006, row['test_acc']+0.03),
+                size=12)
+
+
+# 4. Create a legend based on model sizes
+handles, labels = scatter.legend_elements(prop='sizes', alpha=0.5)
+mobile_size_legend = ax.legend(handles,
+                               labels,
+                               loc='lower right',
+                               title='model size (MB)',
+                               fontsize=12)
+
+#save the figure
+os.makedirs('images', exist_ok=True)
+plt.savefig("images/09-foodvision-mini-inference-speed-vs-performance.jpg")
+
+#show the figure
+plt.show()
+
+
+
+
+
+
+
+
+
+
