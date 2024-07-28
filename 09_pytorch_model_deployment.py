@@ -192,7 +192,7 @@ def create_vit_model(num_classes:3, seed=42):
     return model, transforms
 
 # Create ViT model and transforms
-vit, vit_transforms = create_vit_model(num_classes=3, seed=42)
+# vit, vit_transforms = create_vit_model(num_classes=3, seed=42)
 # summary(vit,
 #         input_size=(1, 3, 224, 224),
 #         col_names=["input_size", "output_size", "num_params", "trainable"],
@@ -200,27 +200,27 @@ vit, vit_transforms = create_vit_model(num_classes=3, seed=42)
 #         row_settings=["var_names"])
 
 # 4.1 Create DataLoaders for ViT
-train_dataloader_vit, test_dataloader_vit, class_names = data_setup.create_dataloaders(train_dir=train_dir,
-                                                                                       test_dir=test_dir,
-                                                                                       transform=vit_transforms,
-                                                                                       batch_size=32)
+# train_dataloader_vit, test_dataloader_vit, class_names = data_setup.create_dataloaders(train_dir=train_dir,
+#                                                                                        test_dir=test_dir,
+#                                                                                        transform=vit_transforms,
+#                                                                                        batch_size=32)
 
 # 4.2 Training ViT feature extractor
 #setup optimizer
-optimizer = torch.optim.Adam(params=vit.parameters(), lr=1e-3)
+# optimizer = torch.optim.Adam(params=vit.parameters(), lr=1e-3)
 
 #setup loss
-loss_fn = torch.nn.CrossEntropyLoss()
+# loss_fn = torch.nn.CrossEntropyLoss()
 
 # Train ViT model with seeds set for reproducibility
-set_seeds()
-vit_results = engine.train(model=vit,
-                           train_dataloader=train_dataloader_vit,
-                           test_dataloader=test_dataloader_vit,
-                           epochs=10,
-                           optimizer=optimizer,
-                           loss_fn=loss_fn,
-                           device=device)
+# set_seeds()
+# vit_results = engine.train(model=vit,
+#                            train_dataloader=train_dataloader_vit,
+#                            test_dataloader=test_dataloader_vit,
+#                            epochs=10,
+#                            optimizer=optimizer,
+#                            loss_fn=loss_fn,
+#                            device=device)
 
 
 # 4.3 Inspecting ViT loss curves
@@ -235,20 +235,20 @@ vit_results = engine.train(model=vit,
 
 # 4.5 Checking the size of ViT feature extractor
 # Get the model size in bytes then convert to megabytes
-pretrained_vit_model_size = Path('models/09_pretrained_vit_feature_extractor_pizza_steak_sushi_20_percent.pth').stat().st_size // (1024*1024)
+# pretrained_vit_model_size = Path('models/09_pretrained_vit_feature_extractor_pizza_steak_sushi_20_percent.pth').stat().st_size // (1024*1024)
 # print(f"Pretrained ViT feature extractor model size: {pretrained_vit_model_size} MB")
 
 
 # 4.6 Collecting ViT feature extractor stats
 # Count number of parameters in ViT
-vit_total_params = sum(torch.numel(param) for param in vit.parameters())
+# vit_total_params = sum(torch.numel(param) for param in vit.parameters())
 # print(vit_total_params)
 
 # Create ViT statistics dictionary
-vit_stats = {'test_loss':vit_results['test_loss'][-1],
-             'test_acc':vit_results['test_acc'][-1],
-             'number_of_parameters': vit_total_params,
-             'model size (MB)': pretrained_vit_model_size}
+# vit_stats = {'test_loss':vit_results['test_loss'][-1],
+#              'test_acc':vit_results['test_acc'][-1],
+#              'number_of_parameters': vit_total_params,
+#              'model size (MB)': pretrained_vit_model_size}
 
 
 # 5. Making predictions with our trained models and timing them
@@ -323,76 +323,76 @@ def pred_and_store(paths: List[pathlib.Path],
 
 # 5.2 Making and timing predictions with EffNetB2
 # Make predictions across test dataset with EffNetB2
-effnetb2_test_pred_dicts = pred_and_store(paths=test_data_paths,
-                                          model=effnetb2,
-                                          transform=effnetb2_transforms,
-                                          class_names=class_names,
-                                          device='cpu')
+# effnetb2_test_pred_dicts = pred_and_store(paths=test_data_paths,
+#                                           model=effnetb2,
+#                                           transform=effnetb2_transforms,
+#                                           class_names=class_names,
+#                                           device='cpu')
 # print(effnetb2_test_pred_dicts[:2])
 
 # Turn the test_pred_dicts into a DataFrame
 import pandas as pd
 
-effnetb2_test_pred_df = pd.DataFrame(effnetb2_test_pred_dicts)
-effnetb2_test_pred_df.head()
+# effnetb2_test_pred_df = pd.DataFrame(effnetb2_test_pred_dicts)
+# effnetb2_test_pred_df.head()
 
 # Check number of correct predictions
 # print(effnetb2_test_pred_df.correct.value_counts())
 
 # Find the average time per prediction
-effnetb2_average_time_per_pred = round(effnetb2_test_pred_df.time_for_pred.mean(), 4)
+# effnetb2_average_time_per_pred = round(effnetb2_test_pred_df.time_for_pred.mean(), 4)
 # print(f"EffNetB2 average time per prediction: {effnetb2_average_time_per_pred} seconds")
 
 # Add EffNetB2 average prediction time to stats dictionary
-effnetb2_stats['time_per_pred_cpu'] = effnetb2_average_time_per_pred
+# effnetb2_stats['time_per_pred_cpu'] = effnetb2_average_time_per_pred
 
 # 5.3 Making and timing predictions with ViT
 # Make list of prediction dictionaries with ViT feature extractor model on test images
-vit_test_pred_dicts = pred_and_store(paths=test_data_paths,
-                                     model=vit,
-                                     transform=vit_transforms,
-                                     class_names=class_names,
-                                     device='cpu')
+# vit_test_pred_dicts = pred_and_store(paths=test_data_paths,
+#                                      model=vit,
+#                                      transform=vit_transforms,
+#                                      class_names=class_names,
+#                                      device='cpu')
 
 # Check the first couple of ViT predictions on the test dataset
 # print(vit_test_pred_dicts[:2])
 
 # Turn vit_test_pred_dicts into a DataFrame
-vit_test_pred_df = pd.DataFrame(vit_test_pred_dicts)
-vit_test_pred_df.head()
+# vit_test_pred_df = pd.DataFrame(vit_test_pred_dicts)
+# vit_test_pred_df.head()
 
 # Count the number of correct predictions
 # print(vit_test_pred_df.correct.value_counts())
 
 # Calculate average time per prediction for ViT model
-vit_average_time_per_pred = round(vit_test_pred_df.time_for_pred.mean(), 4)
-print(f"ViT average time per prediction: {vit_average_time_per_pred} seconds")
+# vit_average_time_per_pred = round(vit_test_pred_df.time_for_pred.mean(), 4)
+# print(f"ViT average time per prediction: {vit_average_time_per_pred} seconds")
 
 # Add average prediction time for ViT model on CPU
-vit_stats['time_per_pred_cpu'] = vit_average_time_per_pred
-print(vit_stats)
+# vit_stats['time_per_pred_cpu'] = vit_average_time_per_pred
+# print(vit_stats)
 
 # 6. Comparing model results, prediction times and size
 # Turn stat dictionaries into DataFrame
-df = pd.DataFrame([effnetb2_stats, vit_stats])
-
-#add column for model names
-df['model'] = ['EffNetB2', 'ViT']
-
-# Convert accuracy to percentages
-df['test_acc'] = round(df['test_acc']*100, 2)
-
-nan_columns = df.columns[df.isna().any()].tolist()
-print(f'Columns containing Nan values {nan_columns}')
-
-df = df[~df['model size (MB)'].isnull()]
-df[['model size (MB)']] = df[['model size (MB)']].astype(int)
-
-nan_columns = df.columns[df.isna().any()].tolist()
-if nan_columns:
-    print(f'After Columns containing Nan values {nan_columns}')
-else:
-    print('no Nan values')
+# df = pd.DataFrame([effnetb2_stats, vit_stats])
+#
+# #add column for model names
+# df['model'] = ['EffNetB2', 'ViT']
+#
+# # Convert accuracy to percentages
+# df['test_acc'] = round(df['test_acc']*100, 2)
+#
+# nan_columns = df.columns[df.isna().any()].tolist()
+# print(f'Columns containing Nan values {nan_columns}')
+#
+# df = df[~df['model size (MB)'].isnull()]
+# df[['model size (MB)']] = df[['model size (MB)']].astype(int)
+#
+# nan_columns = df.columns[df.isna().any()].tolist()
+# if nan_columns:
+#     print(f'After Columns containing Nan values {nan_columns}')
+# else:
+#     print('no Nan values')
 # import numpy as np
 # for stats in [effnetb2_stats, vit_stats]:
 #     for key, value in stats.items():
@@ -404,52 +404,128 @@ else:
 # df[['time_per_pred_cpu']] = df['time_per_pred_cpu'].astype(int)
 
 # Compare ViT to EffNetB2 across different characteristics
-pd.DataFrame(data=(df.set_index("model").loc["ViT"] / df.set_index("model").loc["EffNetB2"]), # divide ViT statistics by EffNetB2 statistics
-             columns=["ViT to EffNetB2 ratios"]).T
+# pd.DataFrame(data=(df.set_index("model").loc["ViT"] / df.set_index("model").loc["EffNetB2"]), # divide ViT statistics by EffNetB2 statistics
+#              columns=["ViT to EffNetB2 ratios"]).T
 
 
 # 6.1 Visualizing the speed vs. performance tradeoff
 # 1. Create a plot from model comparison DataFrame
-fig, ax = plt.subplots(figsize=(12, 8))
-scatter = ax.scatter(data=df,
-                     x='time_per_pred_cpu',
-                     y='test_acc',
-                     c=['blue', 'orange'], #colours to use,
-                     s='model size (MB)'
-                     )
-
-# 2. Add titles, labels and customize fontsize for aesthetics
-ax.set_title('FoodFishion Mini Inference speed vs Perfomance', fontsize=18)
-ax.set_xlabel('Prediction time per image (seconds)', fontsize=14)
-ax.set_ylabel('test accuracy (%)', fontsize=14)
-ax.tick_params(axis='both', labelsize=12)
-ax.grid(True)
-
-# 3. Annotate with model names
-for index, row in df.iterrows():
-    ax.annotate(text=row['model'],
-                xy=(row['time_per_pred_cpu']+0.0006, row['test_acc']+0.03),
-                size=12)
-
-
-# 4. Create a legend based on model sizes
-handles, labels = scatter.legend_elements(prop='sizes', alpha=0.5)
-mobile_size_legend = ax.legend(handles,
-                               labels,
-                               loc='lower right',
-                               title='model size (MB)',
-                               fontsize=12)
-
-#save the figure
-os.makedirs('images', exist_ok=True)
-plt.savefig("images/09-foodvision-mini-inference-speed-vs-performance.jpg")
+# fig, ax = plt.subplots(figsize=(12, 8))
+# scatter = ax.scatter(data=df,
+#                      x='time_per_pred_cpu',
+#                      y='test_acc',
+#                      c=['blue', 'orange'], #colours to use,
+#                      s='model size (MB)'
+#                      )
+#
+# # 2. Add titles, labels and customize fontsize for aesthetics
+# ax.set_title('FoodFishion Mini Inference speed vs Perfomance', fontsize=18)
+# ax.set_xlabel('Prediction time per image (seconds)', fontsize=14)
+# ax.set_ylabel('test accuracy (%)', fontsize=14)
+# ax.tick_params(axis='both', labelsize=12)
+# ax.grid(True)
+#
+# # 3. Annotate with model names
+# for index, row in df.iterrows():
+#     ax.annotate(text=row['model'],
+#                 xy=(row['time_per_pred_cpu']+0.0006, row['test_acc']+0.03),
+#                 size=12)
+#
+#
+# # 4. Create a legend based on model sizes
+# handles, labels = scatter.legend_elements(prop='sizes', alpha=0.5)
+# mobile_size_legend = ax.legend(handles,
+#                                labels,
+#                                loc='lower right',
+#                                title='model size (MB)',
+#                                fontsize=12)
+#
+# #save the figure
+# os.makedirs('images', exist_ok=True)
+# plt.savefig("images/09-foodvision-mini-inference-speed-vs-performance.jpg")
 
 #show the figure
 plt.show()
 
+# 7. Bringing FoodVision Mini to life by creating a Gradio demo
+try:
+    import gradio as gr
+except:
+    os.system('pip -q install gradio')
+    import gradio as gr
+
+# 7.2 Creating a function to map our inputs and outputs
+# Put EffNetB2 on CPU
+effnetb2.to('cpu')
+
+from typing import Tuple, Dict
+
+def predict(img) -> Tuple[Dict, float]:
+    """Transforms and performs a prediction on img and returns prediction and time taken.
+        """
+    #start the timer
+    start_time = timer()
+
+    # Transform the target image and add a batch dimension
+    img = effnetb2_transforms(img).unsqueeze(0)
+
+    # Put model into evaluation mode and turn on inference mode
+    effnetb2.eval()
+    with torch.inference_mode():
+        # Pass the transformed image through the model and turn the prediction logits into prediction probabilities
+        pred_probs = torch.softmax(effnetb2(img), dim=1)
+
+    # Create a prediction label and prediction probability dictionary for each prediction class (this is the required format for Gradio's output parameter)
+    pred_labels_and_probs = {class_names[i]: float(pred_probs[0][i]) for i in range(len(class_names))}
+
+    #calculate the prediction time
+    pred_time = round(timer() - start_time, 5)
+
+    # Return the prediction dictionary and prediction time
+    return pred_labels_and_probs, pred_time
 
 
+import random
+from PIL import Image
 
+## Get a list of all test image filepaths
+test_data_paths = list(Path(test_dir).glob('*/*.jpg'))
+
+# Randomly select a test image path
+# random_image_path = random.sample(test_data_paths, k=1)[0]
+
+# Open the target image
+# image = Image.open(random_image_path)
+# print(f'Predicting on image at path: {random_image_path}')
+
+# Predict on the target image and print out the outputs
+# pred_dict, pred_time = predict(img=image)
+# print(f"Prediction label and probability dictionary: \n{pred_dict}")
+# print(f"Prediction time: {pred_time} seconds")
+
+# 7.3 Creating a list of example images
+example_list = [[str(filepath)] for filepath in random.sample(test_data_paths, k=3)]
+
+# 7.4 Building a Gradio interface
+import gradio as gr
+
+title = 'FoodVision Mini'
+description = "An EfficientNetB2 feature extractor computer vision model to classify images of food as pizza, steak or sushi."
+article = "Created at [09. PyTorch Model Deployment](https://www.learnpytorch.io/09_pytorch_model_deployment/)."
+
+# Create the Gradio demo
+demo = gr.Interface(fn=predict,
+                    inputs=gr.Image(type='pil'),
+                    outputs=[gr.Label(num_top_classes=3, label='Predictions'),
+                             gr.Number(label='Prediction time (s)')],
+                    examples=example_list,
+                    title=title,
+                    description=description,
+                    article=article)
+
+#launch the demo
+demo.launch(debug=False,
+            share=True)
 
 
 
