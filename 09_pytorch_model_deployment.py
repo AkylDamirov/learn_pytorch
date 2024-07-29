@@ -158,7 +158,7 @@ from going_modular import utils
 from pathlib import Path
 
 #get the model size and then convert it to megabytes
-pretrained_effnetb2_model_size = Path("models/09_pretrained_effnetb2_feature_extractor_pizza_steak_sushi_20_percent.pth").stat().st_size // (1024*1024) # division converts bytes to megabytes (roughly)
+pretrained_effnetb2_model_size = Path("demos/foodvision_mini/09_pretrained_effnetb2_feature_extractor_pizza_steak_sushi_20_percent.pth").stat().st_size // (1024*1024) # division converts bytes to megabytes (roughly)
 
 # Count number of parameters in EffNetB2\
 effnetb2_total_params = sum(torch.numel(param) for param in effnetb2.parameters())
@@ -514,21 +514,100 @@ description = "An EfficientNetB2 feature extractor computer vision model to clas
 article = "Created at [09. PyTorch Model Deployment](https://www.learnpytorch.io/09_pytorch_model_deployment/)."
 
 # Create the Gradio demo
-demo = gr.Interface(fn=predict,
-                    inputs=gr.Image(type='pil'),
-                    outputs=[gr.Label(num_top_classes=3, label='Predictions'),
-                             gr.Number(label='Prediction time (s)')],
-                    examples=example_list,
-                    title=title,
-                    description=description,
-                    article=article)
+# demo = gr.Interface(fn=predict,
+#                     inputs=gr.Image(type='pil'),
+#                     outputs=[gr.Label(num_top_classes=3, label='Predictions'),
+#                              gr.Number(label='Prediction time (s)')],
+#                     examples=example_list,
+#                     title=title,
+#                     description=description,
+#                     article=article)
+#
+# #launch the demo
+# demo.launch(debug=False,
+#             share=True)
 
-#launch the demo
-demo.launch(debug=False,
-            share=True)
+# 8. Turning our FoodVision Mini Gradio Demo into a deployable app
+# 8.3 Creating a demos folder to store our FoodVision Mini app files
+import shutil
+from pathlib import Path
 
+# Create FoodVision mini demo path
+foodvision_mini_demo_path = Path("demos/foodvision_mini/")
 
+# Remove files that might already exist there and create new directory
+# if foodvision_mini_demo_path.exists():
+#     shutil.rmtree(foodvision_mini_demo_path)
+#     foodvision_mini_demo_path.mkdir(parents=True,
+#                                     exist_ok=True)
+#
+# else:
+#     # If the file doesn't exist, create it anyway
+#     foodvision_mini_demo_path.mkdir(parents=True,
+#                                     exist_ok=True)
 
+# 8.4 Creating a folder of example images to use with our FoodVision Mini demo
 
+# 1. Create an examples directory
+foodvision_mini_examples_path = foodvision_mini_demo_path / 'examples'
+# foodvision_mini_examples_path.mkdir(parents=True, exist_ok=True)
 
+# 2. Collect three random test dataset image paths
+foodvision_mini_examples = [Path('data/pizza_steak_sushi_20_percent/test/sushi/592799.jpg'),
+                            Path('data/pizza_steak_sushi_20_percent/test/steak/3622237.jpg'),
+                            Path('data/pizza_steak_sushi_20_percent/test/pizza/2582289.jpg')]
 
+# 3. Copy the three random images to the examples directory
+# for example in foodvision_mini_examples:
+#     destination = foodvision_mini_examples_path / example.name
+#     print(f"[INFO] Copying {example} to {destination}")
+#     shutil.copy2(src=example, dst=destination)
+
+# Get example filepaths in a list of lists
+example_list = [['examples/' + example] for example in os.listdir(foodvision_mini_examples_path)]
+# print(example_list)
+
+# 8.5 Moving our trained EffNetB2 model to our FoodVision Mini demo directory
+# Create a source path for our target model
+effnetb2_foodvision_mini_model_path = "models/09_pretrained_effnetb2_feature_extractor_pizza_steak_sushi_20_percent.pth"
+
+# Create a destination path for our target model
+effnetb2_foodvision_mini_model_destination = foodvision_mini_demo_path / effnetb2_foodvision_mini_model_path.split('/')[1]
+
+try:
+    print(f"[INFO] Attempting to move {effnetb2_foodvision_mini_model_path} to {effnetb2_foodvision_mini_model_destination}")
+    #move the model
+    shutil.move(src=effnetb2_foodvision_mini_model_path,
+                dst=effnetb2_foodvision_mini_model_destination)
+
+    print('model move complete')
+
+except:
+    print(f"[INFO] No model found at {effnetb2_foodvision_mini_model_path}, perhaps its already been moved?")
+    print(f"[INFO] Model exists at {effnetb2_foodvision_mini_model_destination}: {effnetb2_foodvision_mini_model_destination.exists()}")
+
+# 8.6 Turning our EffNetB2 model into a Python script (model.py)
+file_path = foodvision_mini_demo_path / 'model.py'
+content = """
+def create_effnetb2_model(num_classes=3, seed=42):
+    # 1, 2, 3. Create EffNetB2 pretrained weights, transforms and model
+    weights = torchvision.models.EfficientNet_B2_Weights.DEFAULT
+    transforms = weights.transforms()
+    model = torchvision.models.efficientnet_b2(weights=weights)
+
+    #4 Freeze all layers in base model
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # 5. Change classifier head with random seed for reproducibility
+    torch.manual_seed(seed)
+    model.classifier = nn.Sequential(
+        nn.Dropout(p=0.3, inplace=True),
+        nn.Linear(in_features=1408, out_features=num_classes)
+    )
+
+    return model, transforms
+"""
+
+with open(file_path, 'w') as file:
+    file.write(content)
