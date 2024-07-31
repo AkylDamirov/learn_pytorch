@@ -1,0 +1,1 @@
+09_pretrained_effnetb2_feature_extractor_pizza_steak_sushi_20_percent.pth filter=lfs diff=lfs merge=lfs -text

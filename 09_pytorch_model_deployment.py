@@ -100,7 +100,7 @@ def create_effnetb2_model(num_classes=3, seed=42):
 
     return model, transforms
 
-effnetb2, effnetb2_transforms = create_effnetb2_model(num_classes=3,seed=42)
+# effnetb2, effnetb2_transforms = create_effnetb2_model(num_classes=3,seed=42)
 
 #print summary
 from torchinfo import summary
@@ -114,27 +114,27 @@ from torchinfo import summary
 
 # 3.2 Creating DataLoaders for EffNetB2
 #set up dataloaders
-train_dataloader_effnetb2, test_dataloader_effnetb2, class_names = data_setup.create_dataloaders(train_dir=train_dir,
-                                                                                                test_dir=test_dir,
-                                                                                                transform=effnetb2_transforms,
-                                                                                                batch_size=32)
+# train_dataloader_effnetb2, test_dataloader_effnetb2, class_names = data_setup.create_dataloaders(train_dir=train_dir,
+#                                                                                                 test_dir=test_dir,
+#                                                                                                 transform=effnetb2_transforms,
+#                                                                                                 batch_size=32)
 
 # 3.3 Training EffNetB2 feature extractor
 #setup optimizer
-optimizer = torch.optim.Adam(params=effnetb2.parameters(), lr=1e-3)
+# optimizer = torch.optim.Adam(params=effnetb2.parameters(), lr=1e-3)
 
 #setup loss function
-loss_fn = torch.nn.CrossEntropyLoss()
+# loss_fn = torch.nn.CrossEntropyLoss()
 
 # Set seeds for reproducibility and train the model
-set_seeds()
-effnetb2_results = engine.train(model=effnetb2,
-                                train_dataloader=train_dataloader_effnetb2,
-                                test_dataloader=test_dataloader_effnetb2,
-                                epochs=10,
-                                optimizer=optimizer,
-                                loss_fn=loss_fn,
-                                device=device)
+# set_seeds()
+# effnetb2_results = engine.train(model=effnetb2,
+#                                 train_dataloader=train_dataloader_effnetb2,
+#                                 test_dataloader=test_dataloader_effnetb2,
+#                                 epochs=10,
+#                                 optimizer=optimizer,
+#                                 loss_fn=loss_fn,
+#                                 device=device)
 
 
 
@@ -158,18 +158,19 @@ from going_modular import utils
 from pathlib import Path
 
 #get the model size and then convert it to megabytes
-pretrained_effnetb2_model_size = Path("demos/foodvision_mini/09_pretrained_effnetb2_feature_extractor_pizza_steak_sushi_20_percent.pth").stat().st_size // (1024*1024) # division converts bytes to megabytes (roughly)
+# pretrained_effnetb2_model_size = Path(
+#     "demos/foodvision_mini2/09_pretrained_effnetb2_feature_extractor_pizza_steak_sushi_20_percent.pth").stat().st_size // (1024 * 1024) # division converts bytes to megabytes (roughly)
 
 # Count number of parameters in EffNetB2\
-effnetb2_total_params = sum(torch.numel(param) for param in effnetb2.parameters())
+# effnetb2_total_params = sum(torch.numel(param) for param in effnetb2.parameters())
 # print(effnetb2_total_params)
 
 #create dictionary with effnetb2 statistics
-effnetb2_stats = {'test_loss':effnetb2_results['test_loss'][-1],
-                  'test_acc':effnetb2_results['test_acc'][-1],
-                  'number_of_parameters':effnetb2_total_params,
-                  'model size (MB)':pretrained_effnetb2_model_size
-                  }
+# effnetb2_stats = {'test_loss':effnetb2_results['test_loss'][-1],
+#                   'test_acc':effnetb2_results['test_acc'][-1],
+#                   'number_of_parameters':effnetb2_total_params,
+#                   'model size (MB)':pretrained_effnetb2_model_size
+#                   }
 
 # 4. Creating a ViT feature extractor
 def create_vit_model(num_classes:3, seed=42):
@@ -445,7 +446,7 @@ import pandas as pd
 # plt.savefig("images/09-foodvision-mini-inference-speed-vs-performance.jpg")
 
 #show the figure
-plt.show()
+# plt.show()
 
 # 7. Bringing FoodVision Mini to life by creating a Gradio demo
 try:
@@ -456,33 +457,33 @@ except:
 
 # 7.2 Creating a function to map our inputs and outputs
 # Put EffNetB2 on CPU
-effnetb2.to('cpu')
+# effnetb2.to('cpu')
 
 from typing import Tuple, Dict
 
-def predict(img) -> Tuple[Dict, float]:
-    """Transforms and performs a prediction on img and returns prediction and time taken.
-        """
-    #start the timer
-    start_time = timer()
-
-    # Transform the target image and add a batch dimension
-    img = effnetb2_transforms(img).unsqueeze(0)
-
-    # Put model into evaluation mode and turn on inference mode
-    effnetb2.eval()
-    with torch.inference_mode():
-        # Pass the transformed image through the model and turn the prediction logits into prediction probabilities
-        pred_probs = torch.softmax(effnetb2(img), dim=1)
-
-    # Create a prediction label and prediction probability dictionary for each prediction class (this is the required format for Gradio's output parameter)
-    pred_labels_and_probs = {class_names[i]: float(pred_probs[0][i]) for i in range(len(class_names))}
-
-    #calculate the prediction time
-    pred_time = round(timer() - start_time, 5)
-
-    # Return the prediction dictionary and prediction time
-    return pred_labels_and_probs, pred_time
+# def predict(img) -> Tuple[Dict, float]:
+#     """Transforms and performs a prediction on img and returns prediction and time taken.
+#         """
+#     #start the timer
+#     start_time = timer()
+#
+#     # Transform the target image and add a batch dimension
+#     img = effnetb2_transforms(img).unsqueeze(0)
+#
+#     # Put model into evaluation mode and turn on inference mode
+#     effnetb2.eval()
+#     with torch.inference_mode():
+#         # Pass the transformed image through the model and turn the prediction logits into prediction probabilities
+#         pred_probs = torch.softmax(effnetb2(img), dim=1)
+#
+#     # Create a prediction label and prediction probability dictionary for each prediction class (this is the required format for Gradio's output parameter)
+#     pred_labels_and_probs = {class_names[i]: float(pred_probs[0][i]) for i in range(len(class_names))}
+#
+#     #calculate the prediction time
+#     pred_time = round(timer() - start_time, 5)
+#
+#     # Return the prediction dictionary and prediction time
+#     return pred_labels_and_probs, pred_time
 
 
 import random
@@ -504,14 +505,14 @@ test_data_paths = list(Path(test_dir).glob('*/*.jpg'))
 # print(f"Prediction time: {pred_time} seconds")
 
 # 7.3 Creating a list of example images
-example_list = [[str(filepath)] for filepath in random.sample(test_data_paths, k=3)]
+# example_list = [[str(filepath)] for filepath in random.sample(test_data_paths, k=3)]
 
 # 7.4 Building a Gradio interface
 import gradio as gr
 
-title = 'FoodVision Mini'
-description = "An EfficientNetB2 feature extractor computer vision model to classify images of food as pizza, steak or sushi."
-article = "Created at [09. PyTorch Model Deployment](https://www.learnpytorch.io/09_pytorch_model_deployment/)."
+# title = 'FoodVision Mini'
+# description = "An EfficientNetB2 feature extractor computer vision model to classify images of food as pizza, steak or sushi."
+# article = "Created at [09. PyTorch Model Deployment](https://www.learnpytorch.io/09_pytorch_model_deployment/)."
 
 # Create the Gradio demo
 # demo = gr.Interface(fn=predict,
@@ -533,7 +534,7 @@ import shutil
 from pathlib import Path
 
 # Create FoodVision mini demo path
-foodvision_mini_demo_path = Path("demos/foodvision_mini/")
+foodvision_mini_demo_path = Path("demos/foodvision_mini2/")
 
 # Remove files that might already exist there and create new directory
 # if foodvision_mini_demo_path.exists():
@@ -564,7 +565,7 @@ foodvision_mini_examples = [Path('data/pizza_steak_sushi_20_percent/test/sushi/5
 #     shutil.copy2(src=example, dst=destination)
 
 # Get example filepaths in a list of lists
-example_list = [['examples/' + example] for example in os.listdir(foodvision_mini_examples_path)]
+# example_list = [['examples/' + example] for example in os.listdir(foodvision_mini_examples_path)]
 # print(example_list)
 
 # 8.5 Moving our trained EffNetB2 model to our FoodVision Mini demo directory
@@ -587,27 +588,235 @@ except:
     print(f"[INFO] Model exists at {effnetb2_foodvision_mini_model_destination}: {effnetb2_foodvision_mini_model_destination.exists()}")
 
 # 8.6 Turning our EffNetB2 model into a Python script (model.py)
-file_path = foodvision_mini_demo_path / 'model.py'
-content = """
-def create_effnetb2_model(num_classes=3, seed=42):
-    # 1, 2, 3. Create EffNetB2 pretrained weights, transforms and model
-    weights = torchvision.models.EfficientNet_B2_Weights.DEFAULT
-    transforms = weights.transforms()
-    model = torchvision.models.efficientnet_b2(weights=weights)
+# file_path = foodvision_mini_demo_path / 'model.py'
+# content = """
+# def create_effnetb2_model(num_classes=3, seed=42):
+#     # 1, 2, 3. Create EffNetB2 pretrained weights, transforms and model
+#     weights = torchvision.models.EfficientNet_B2_Weights.DEFAULT
+#     transforms = weights.transforms()
+#     model = torchvision.models.efficientnet_b2(weights=weights)
+#
+#     #4 Freeze all layers in base model
+#     for param in model.parameters():
+#         param.requires_grad = False
+#
+#     # 5. Change classifier head with random seed for reproducibility
+#     torch.manual_seed(seed)
+#     model.classifier = nn.Sequential(
+#         nn.Dropout(p=0.3, inplace=True),
+#         nn.Linear(in_features=1408, out_features=num_classes)
+#     )
+#
+#     return model, transforms
+# """
+#
+# with open(file_path, 'w') as file:
+#     file.write(content)
 
-    #4 Freeze all layers in base model
-    for param in model.parameters():
-        param.requires_grad = False
+# 8.7 Turning our FoodVision Mini Gradio app into a Python script (app.py)
+# file_path = foodvision_mini_demo_path / 'app.py'
+# script_content = """
+# import gradio as gr
+# import os
+# import torch
+#
+# from demos.foodvision_mini2.model import create_effnetb2_model
+# from timeit import default_timer as timer
+# from typing import Tuple, Dict
+#
+# # Setup class names
+# class_names = ['pizza', 'steak', 'sushi']
+#
+# ### 2. Model and transforms preparation ###
+# # Create EffNetB2 model
+# effnetb2, effnetb2_transforms = create_effnetb2_model(len(class_names))
+#
+# # Load saved weights
+# effnetb2.load_state_dict(
+#     torch.load(
+#         '09_pretrained_effnetb2_feature_extractor_pizza_steak_sushi_20_percent.pth',
+#         map_location=torch.device('cpu')
+#     )
+# )
+#
+# ### 3. Predict function ###
+# # Create predict function
+# def predict(img) -> Tuple[Dict, float]:
+#     \"""Transforms and performs a prediction on img and returns prediction and time taken.\"""
+#     # Start the timer
+#     start_time = timer()
+#
+#     # Transform the target image and add a batch dimension
+#     img = effnetb2_transforms(img).unsqueeze(0)
+#
+#     # Put model into evaluation mode and turn on inference mode
+#     effnetb2.eval()
+#     with torch.inference_mode():
+#         # Pass the transformed image through the model and turn the prediction logits into prediction probabilities
+#         pred_probs = torch.softmax(effnetb2(img), dim=1)
+#
+#         # Create a prediction label and prediction probability dictionary for each prediction class
+#         pred_labels_and_probs = {class_names[i]: float(pred_probs[0][i]) for i in range(len(class_names))}
+#
+#         # Calculate the prediction time
+#         pred_time = round(timer() - start_time, 5)
+#
+#         # Return the prediction dictionary and prediction time
+#         return pred_labels_and_probs, pred_time
+#
+# # Create title, description and article strings
+# title = "FoodVision Mini 🍕🥩🍣"
+# description = "An EfficientNetB2 feature extractor computer vision model to classify images of food as pizza, steak or sushi."
+# article = "Created at [09. PyTorch Model Deployment](https://www.learnpytorch.io/09_pytorch_model_deployment/)."
+#
+# # Create examples list from 'examples/' directory
+# example_list = [['examples/' + example] for example in os.listdir('examples')]
+#
+# # Create gradio demo
+# demo = gr.Interface(
+#     fn=predict,
+#     inputs=gr.Image(type='pil'),
+#     outputs=[
+#         gr.Label(num_top_classes=3, label='Predictions'),
+#         gr.Number(label='Prediction time (s)')
+#     ],
+#     examples=example_list,
+#     title=title,
+#     description=description,
+#     article=article
+# )
+#
+# # Launch the demo
+# demo.launch()
+# """
+#
+#
+# with open(file_path, 'w') as file:
+#     file.write(script_content)
 
-    # 5. Change classifier head with random seed for reproducibility
-    torch.manual_seed(seed)
-    model.classifier = nn.Sequential(
-        nn.Dropout(p=0.3, inplace=True),
-        nn.Linear(in_features=1408, out_features=num_classes)
-    )
+# file_path = foodvision_mini_demo_path / 'requirements.txt'
+# content_requirements = """
+# torch==1.12.0
+# torchvision==0.13.0
+# gradio==3.1.4
+# """
+#
+# with open(file_path, 'w') as file:
+#     file.write(content_requirements)
 
-    return model, transforms
-"""
+# 10. Creating FoodVision Big
+# 10.1 Creating a model and transforms for FoodVision Big
+# Create EffNetB2 model capable of fitting to 101 classes for Food101
+effnetb2_food101, effnetb2_transforms = create_effnetb2_model(num_classes=101)
 
-with open(file_path, 'w') as file:
-    file.write(content)
+# Create Food101 training data transforms (only perform data augmentation on the training images)
+food101_train_transforms = torchvision.transforms.Compose([
+    torchvision.transforms.TrivialAugmentWide(),
+    effnetb2_transforms
+])
+
+# 10.2 Getting data for FoodVision Big
+from torchvision import datasets
+
+#setup data directory
+data_dir = Path('data')
+
+# Get training data (~750 images x 101 food classes)
+train_data = datasets.Food101(root=data_dir,
+                              split='train',
+                              transform=food101_train_transforms, # perform data augmentation on training data
+                              download=True)
+
+test_data = datasets.Food101(root=data_dir,
+                             split='test',
+                             transform=effnetb2_transforms, # perform normal EffNetB2 transforms on test data
+                             download=True)
+
+
+# Get Food101 class names
+food101_class_names = train_data.classes
+
+# 10.3 Creating a subset of the Food101 dataset for faster experimenting
+
+def split_dataset(dataset:torchvision.datasets, split_size:float=0.2, seed:int=42):
+    # Create split lengths based on original dataset length
+    length_1 = int(len(dataset)*split_size) #desired length
+    length_2 = len(dataset)-length_1 #remaining length
+
+    # Print out info
+    print(f"[INFO] Splitting dataset of length {len(dataset)} into splits of size: {length_1} ({int(split_size * 100)}%), {length_2} ({int((1 - split_size) * 100)}%)")
+
+    #create splits with given random seed
+    random_split_1, random_split_2 = torch.utils.data.random_split(dataset,
+                                                                   lengths=[length_1, length_2],
+                                                                   generator=torch.manual_seed(seed))
+
+    return random_split_1, random_split_2
+
+#create training 20% split of food101
+train_data_food101_20_percent, _ = split_dataset(dataset=train_data,
+                                                 split_size=0.2)
+
+#create testing 20% split of food101
+test_data_food101_20_percent, _ = split_dataset(dataset=test_data,
+                                                split_size=0.2)
+
+# print(len(train_data_food101_20_percent), len(test_data_food101_20_percent))
+
+# 10.4 Turning our Food101 datasets into DataLoaders
+import os, torch
+
+BATCH_SIZE = 32
+NUM_WORKERS = 0
+
+# Create Food101 20 percent training DataLoader
+train_dataloader_food101_20_percent = torch.utils.data.DataLoader(train_data_food101_20_percent,
+                                                                  batch_size=BATCH_SIZE,
+                                                                  shuffle=True,
+                                                                  num_workers=NUM_WORKERS)
+
+# Create Food101 20 percent testing DataLoader
+test_dataloader_food101_20_percent = torch.utils.data.DataLoader(test_data_food101_20_percent,
+                                                                 batch_size=BATCH_SIZE,
+                                                                 shuffle=False,
+                                                                 num_workers=NUM_WORKERS
+                                                                 )
+
+# 10.5 Training FoodVision Big model
+#setup optimizer
+optimizer = torch.optim.Adam(params=effnetb2_food101.parameters(),
+                             lr=1e-3)
+
+loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)# throw in a little label smoothing because so many classes
+
+# Want to beat original Food101 paper with 20% of data, need 56.4%+ acc on test dataset
+set_seeds()
+effnetb2_food101_results = engine.train(effnetb2_food101,
+                                        train_dataloader=train_dataloader_food101_20_percent,
+                                        test_dataloader=test_dataloader_food101_20_percent,
+                                        optimizer=optimizer,
+                                        loss_fn=loss_fn,
+                                        epochs=5,
+                                        device=device)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

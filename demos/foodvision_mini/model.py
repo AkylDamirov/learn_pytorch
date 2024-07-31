@@ -1,7 +1,7 @@
 import torchvision
 import torch
 import torch.nn as nn
-def create_effnetb2_model(num_classes=3, seed=42):
+def create_effnetb2_model(num_classes: int=3, seed: int=42):
     # 1, 2, 3. Create EffNetB2 pretrained weights, transforms and model
     weights = torchvision.models.EfficientNet_B2_Weights.DEFAULT
     transforms = weights.transforms()
