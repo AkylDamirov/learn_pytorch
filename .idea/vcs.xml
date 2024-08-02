@@ -4,6 +4,5 @@
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/demos/foodvision_mini" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/demos/foodvision_mini2" vcs="Git" />
   </component>
 </project>
