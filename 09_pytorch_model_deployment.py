@@ -784,39 +784,207 @@ test_dataloader_food101_20_percent = torch.utils.data.DataLoader(test_data_food1
 
 # 10.5 Training FoodVision Big model
 #setup optimizer
-optimizer = torch.optim.Adam(params=effnetb2_food101.parameters(),
-                             lr=1e-3)
-
-loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)# throw in a little label smoothing because so many classes
+# optimizer = torch.optim.Adam(params=effnetb2_food101.parameters(),
+#                              lr=1e-3)
+#
+# loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)# throw in a little label smoothing because so many classes
 
 # Want to beat original Food101 paper with 20% of data, need 56.4%+ acc on test dataset
-set_seeds()
-effnetb2_food101_results = engine.train(effnetb2_food101,
-                                        train_dataloader=train_dataloader_food101_20_percent,
-                                        test_dataloader=test_dataloader_food101_20_percent,
-                                        optimizer=optimizer,
-                                        loss_fn=loss_fn,
-                                        epochs=5,
-                                        device=device)
+# set_seeds()
+# effnetb2_food101_results = engine.train(effnetb2_food101,
+#                                         train_dataloader=train_dataloader_food101_20_percent,
+#                                         test_dataloader=test_dataloader_food101_20_percent,
+#                                         optimizer=optimizer,
+#                                         loss_fn=loss_fn,
+#                                         epochs=5,
+#                                         device=device)
 
 
+# 10.6 Inspecting loss curves of FoodVision Big model
+from helper_functions import plot_loss_curves
+
+# Check out the loss curves for FoodVision Big
+# plot_loss_curves(effnetb2_food101_results)
+
+# 10.7 Saving and loading FoodVision Big
+
+#create model path
+# effnetb2_food101_model_path = '09_pretrained_effnetb2_feature_extractor_food101_20_percent.pth'
+
+#save foodision big model
+# utils.save_model(model=effnetb2_food101,
+#                  target_dir='models',
+#                  model_name=effnetb2_food101_model_path)
+
+# Create Food101 compatible EffNetB2 instance
+# loaded_effnetb2_food101, effnetb2_transforms = create_effnetb2_model(num_classes=101)
+
+# Load the saved model's state_dict()
+# loaded_effnetb2_food101.load_state_dict(torch.load('09_pretrained_effnetb2_feature_extractor_food101_20_percent'))
+
+# 10.8 Checking FoodVision Big model size
+# Get the model size in bytes then convert to megabytes
+# pretrained_effnetb2_food101_model_size = Path('models', effnetb2_food101_model_path).stat().st_size // (1024*1024) # division converts bytes to megabytes (roughly)
+# print(f"Pretrained EffNetB2 feature extractor Food101 model size: {pretrained_effnetb2_food101_model_size} MB")
+
+# 11. Turning our FoodVision Big model into a deployable app
+#create foodvision big demo path
+foodvision_big_demo_path = Path('demos/foodvision_big/')
+
+#make foodvision big demo directory
+foodvision_big_demo_path.mkdir(parents=True, exist_ok=True)
+
+#make foodvision big demo examples directory
+(foodvision_big_demo_path / 'examples').mkdir(parents=True, exist_ok=True)
+
+# 11.1 Downloading an example image and moving it to the examples directory
+import urllib.request
+
+# Download and move an example image
+# urllib.request.urlretrieve('https://raw.githubusercontent.com/mrdbourke/pytorch-deep-learning/main/images/04-pizza-dad.jpeg', '04-pizza-dad.jpeg')
+# shutil.move('04-pizza-dad.jpeg', 'demos/foodvision_big/examples/04-pizza-dad.jpg')
+#
+# # Move trained model to FoodVision Big demo folder (will error if model is already moved)
+# try:
+#     shutil.move('models/09_pretrained_effnetb2_feature_extractor_food101_20_percent.pth', 'demos/foodvision_big')
+# except shutil.Error as e:
+#     print(f'Error moving model {e}')
 
 
+# 11.2 Saving Food101 class names to file (class_names.txt)
+# Create path to Food101 class names
+foodvision_big_class_names_path = foodvision_big_demo_path / 'class_names.txt'
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# # Write Food101 class names list to file
+# with open(foodvision_big_class_names_path, 'w') as f:
+#     print(f"[INFO] Saving Food101 class names to {foodvision_big_class_names_path}")
+#     f.write('\n'.join(food101_class_names))
+#
+# # 11.3 Turning our FoodVision Big model into a Python script (model.py)
+# file_path = foodvision_big_demo_path / 'model.py'
+# content = """
+# import torch
+# import torchvision
+#
+# from torch import nn
+#
+#
+# def create_effnetb2_model(num_classes:int=3,
+#                           seed:int=42):
+#     # Create EffNetB2 pretrained weights, transforms and model
+#     weights = torchvision.models.EfficientNet_B2_Weights.DEFAULT
+#     transforms = weights.transforms()
+#     model = torchvision.models.efficientnet_b2(weights=weights)
+#
+#     # Freeze all layers in base model
+#     for param in model.parameters():
+#         param.requires_grad = False
+#
+#     # Change classifier head with random seed for reproducibility
+#     torch.manual_seed(seed)
+#     model.classifier = nn.Sequential(
+#         nn.Dropout(p=0.3, inplace=True),
+#         nn.Linear(in_features=1408, out_features=num_classes),
+#     )
+#
+#     return model, transforms
+# """
+# with open(file_path, 'w') as file:
+#     file.write(content)
+#
+# file_path = foodvision_big_demo_path / 'app.py'
+# content = """
+# ### 1. Imports and class names setup ###
+# import gradio as gr
+# import os
+# import torch
+#
+# from model import create_effnetb2_model
+# from timeit import default_timer as timer
+# from typing import Tuple, Dict
+#
+# #setup class names
+# with open('class_names.txt', 'r') as f:
+#     class_names = [food_name.strip for food_name in f.readline()]
+#
+# ### 2. Model and transforms preparation ###
+#
+# #create model
+# effnetb2, effnetb2_transforms = create_effnetb2_model(
+#     num_classes=101
+# )
+#
+# #load saved weights
+# effnetb2.load_state_dict(
+#     torch.load(
+#         f='09_pretrained_effnetb2_feature_extractor_food101_20_percent.pth',
+#         map_location=torch.device('cpu')
+#     )
+# )
+#
+# ### 3. Predict function ###
+# #create predict function
+# def predict(img):
+#     #start timer
+#     start_time = timer()
+#
+#     # Transform the target image and add a batch dimension
+#     img = effnetb2_transforms(img).unsqueeze(0)
+#
+#     # Put model into evaluation mode and turn on inference mode
+#     effnetb2.eval()
+#     with torch.inference_mode():
+#         # Pass the transformed image through the model and turn the prediction logits into prediction probabilities
+#         pred_probs = torch.softmax(effnetb2(img),dim=1)
+#
+#     # Create a prediction label and prediction probability dictionary for each prediction class (this is the required format for Gradio's output parameter)
+#     pred_labels_and_probs = {class_names[i]: float(pred_probs[0][i]) for i in range(len(class_names))}
+#
+#     # Calculate the prediction time
+#     pred_time = (timer() - start_time, 5)
+#
+#     # Return the prediction dictionary and prediction time
+#     return pred_labels_and_probs, pred_time
+#
+# ### 4. Gradio app ###
+#
+# # Create title, description and article strings
+# title = "FoodVision Big 🍔👁"
+# description = "An EfficientNetB2 feature extractor computer vision model to classify images of food into [101 different classes]"
+# article = "Created at [09. PyTorch Model Deployment](https://www.learnpytorch.io/09_pytorch_model_deployment/)."
+#
+# # Create examples list from "examples/" directory
+# example_list = [['examples/'+example] for example in os.listdir('examples')]
+#
+# # Create Gradio interface
+# demo = gr.Interface(
+#     fn=predict,
+#     inputs=gr.Image(type='pil'),
+#     outputs=[
+#         gr.Label(num_top_classes=5, label="Predictions"),
+#         gr.Number(label='Prediction time (s)')
+#     ],
+#     examples=example_list,
+#     title=title,
+#     description=description,
+#     article=article
+# )
+#
+# #launch the app ]
+# demo.launch()
+# """
+# with open(file_path, 'w') as file:
+#     file.write(content)
+#
+# file_path = foodvision_big_demo_path / 'requirements.txt'
+# content_requirements = """
+# torch==1.12.0
+# torchvision==0.13.0
+# gradio==3.1.4
+# """
+#
+# with open(file_path, 'w') as file:
+#     file.write(content_requirements)
+#
 
 
