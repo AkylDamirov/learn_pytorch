@@ -592,7 +592,7 @@ foodvision_big_results = train(model=foodvision_big_model,
                                epochs=5,
                                device=device,
                                writer=create_writer(experiment_name='food101_all_data',
-                                                    model_name='foodvision_big',
+                                                    model_name='foodvision_big2',
                                                     extra=f'{epochs} epochs'
                                 ))
 
