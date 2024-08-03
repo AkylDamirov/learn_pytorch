@@ -842,11 +842,11 @@ import urllib.request
 
 # Download and move an example image
 # urllib.request.urlretrieve('https://raw.githubusercontent.com/mrdbourke/pytorch-deep-learning/main/images/04-pizza-dad.jpeg', '04-pizza-dad.jpeg')
-# shutil.move('04-pizza-dad.jpeg', 'demos/foodvision_big/examples/04-pizza-dad.jpg')
+# shutil.move('04-pizza-dad.jpeg', 'demos/foodvision_big2/examples/04-pizza-dad.jpg')
 #
 # # Move trained model to FoodVision Big demo folder (will error if model is already moved)
 # try:
-#     shutil.move('models/09_pretrained_effnetb2_feature_extractor_food101_20_percent.pth', 'demos/foodvision_big')
+#     shutil.move('models/09_pretrained_effnetb2_feature_extractor_food101_20_percent.pth', 'demos/foodvision_big2')
 # except shutil.Error as e:
 #     print(f'Error moving model {e}')
 
@@ -987,4 +987,4 @@ foodvision_big_class_names_path = foodvision_big_demo_path / 'class_names.txt'
 #     file.write(content_requirements)
 #
 
-
+# 11.7 Deploying our FoodVision Big app to HuggingFace Spaces
